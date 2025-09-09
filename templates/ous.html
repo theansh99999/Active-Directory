@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-diagram-3"></i> Organizational Units</h1>
+    {% if current_user.role == 'Admin' %}
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('add_ou') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add OU
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- OUs Table -->
+<div class="card">
+    <div class="card-body">
+        {% if ous %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Full Path</th>
+                        <th>Description</th>
+                        <th>Computers</th>
+                        <th>Created</th>
+                        {% if current_user.role == 'Admin' %}
+                        <th>Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ou in ous %}
+                    <tr>
+                        <td>
+                            <strong>{{ ou.name }}</strong>
+                            {% if ou.parent %}
+                                <small class="text-muted">(Child of {{ ou.parent.name }})</small>
+                            {% else %}
+                                <small class="text-muted">(Root Level)</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <code>{{ ou.get_full_path() }}</code>
+                        </td>
+                        <td>{{ ou.description or '-' }}</td>
+                        <td>
+                            <span class="badge bg-info">{{ ou.computers|length }} computers</span>
+                        </td>
+                        <td>
+                            <small>{{ ou.created_at.strftime('%Y-%m-%d') }}</small>
+                        </td>
+                        {% if current_user.role == 'Admin' %}
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('edit_ou', id=ou.id) }}" 
+                                   class="btn btn-sm btn-outline-primary" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="confirmDelete('{{ ou.name }}', '{{ url_for('delete_ou', id=ou.id) }}')" 
+                                        title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% else %}
+        <p class="text-muted text-center">No organizational units found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(ouName, deleteUrl) {
+    if (confirm('Are you sure you want to delete OU "' + ouName + '"? This action cannot be undone and will affect all computers in this OU.')) {
+        // Create a form and submit it
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = deleteUrl;
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-collection"></i> Group Management</h1>
+    {% if current_user.is_authenticated and current_user.role == 'Admin' %}
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('add_group') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add Group
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Search Bar -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <form method="GET" class="d-flex">
+            <input type="text" name="search" class="form-control" placeholder="Search groups..." 
+                   value="{{ search|default('') }}" onchange="this.form.submit()">
+            <button type="submit" class="btn btn-outline-secondary ms-2">
+                <i class="bi bi-search"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Groups Table -->
+<div class="card">
+    <div class="card-body">
+        {% if groups %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Permissions</th>
+                        <th>Members</th>
+                        <th>Created</th>
+                        {% if current_user.is_authenticated and current_user.role == 'Admin' %}
+                        <th>Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for group in groups %}
+                    <tr>
+                        <td><strong>{{ group.name }}</strong></td>
+                        <td>{{ group.description or '-' }}</td>
+                        <td>
+                            <span class="badge {% if group.permissions == 'read-write' %}bg-warning{% else %}bg-info{% endif %}">
+                                {{ group.permissions|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ group.members|length }} members</span>
+                        </td>
+                        <td>
+                            <small>{{ group.created_at.strftime('%Y-%m-%d') }}</small>
+                        </td>
+                        {% if current_user.is_authenticated and current_user.role == 'Admin' %}
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('edit_group', id=group.id) }}" 
+                                   class="btn btn-sm btn-outline-primary" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="confirmDelete('{{ group.name }}', '{{ url_for('delete_group', id=group.id) }}')" 
+                                        title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination and pagination.pages > 1 %}
+        <nav aria-label="Group pagination">
+            <ul class="pagination justify-content-center">
+                {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('groups', page=pagination.prev_num, search=search|default('')) }}">Previous</a>
+                    </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        {% if page_num != pagination.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('groups', page=page_num, search=search|default('')) }}">{{ page_num }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('groups', page=pagination.next_num, search=search|default('')) }}">Next</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        {% else %}
+        <p class="text-muted text-center">No groups found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(groupName, deleteUrl) {
+    if (confirm('Are you sure you want to delete group "' + groupName + '"? This action cannot be undone.')) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = deleteUrl;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

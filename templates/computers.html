@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-pc-display"></i> Computer Management</h1>
+    {% if current_user.role == 'Admin' %}
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('add_computer') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add Computer
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Search Bar -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <form method="GET" class="d-flex">
+            <input type="text" name="search" class="form-control" placeholder="Search computers..." 
+                   value="{{ search }}" onchange="this.form.submit()">
+            <button type="submit" class="btn btn-outline-secondary ms-2">
+                <i class="bi bi-search"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Computers Table -->
+<div class="card">
+    <div class="card-body">
+        {% if computers %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>OS</th>
+                        <th>IP Address</th>
+                        <th>Status</th>
+                        <th>OU</th>
+                        <th>Last Seen</th>
+                        {% if current_user.role == 'Admin' %}
+                        <th>Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for computer in computers %}
+                    <tr>
+                        <td><strong>{{ computer.name }}</strong></td>
+                        <td>{{ computer.description or '-' }}</td>
+                        <td>{{ computer.operating_system or '-' }}</td>
+                        <td>{{ computer.ip_address or '-' }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if computer.status == 'ON' %}bg-success
+                                {% elif computer.status == 'OFF' %}bg-secondary
+                                {% else %}bg-warning{% endif %}">
+                                {{ computer.status }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if computer.organizational_unit %}
+                                <small>{{ computer.organizational_unit.get_full_path() }}</small>
+                            {% else %}
+                                <small class="text-muted">None</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if computer.last_seen %}
+                                <small>{{ computer.last_seen.strftime('%Y-%m-%d %H:%M') }}</small>
+                            {% else %}
+                                <small class="text-muted">Never</small>
+                            {% endif %}
+                        </td>
+                        {% if current_user.role == 'Admin' %}
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('edit_computer', id=computer.id) }}" 
+                                   class="btn btn-sm btn-outline-primary" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                
+                                <!-- Status Change Buttons -->
+                                {% if computer.status != 'ON' %}
+                                <form method="POST" action="{{ url_for('change_computer_status', id=computer.id, status='ON') }}" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Turn ON">
+                                        <i class="bi bi-power"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                
+                                {% if computer.status != 'OFF' %}
+                                <form method="POST" action="{{ url_for('change_computer_status', id=computer.id, status='OFF') }}" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Turn OFF">
+                                        <i class="bi bi-stop-circle"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                
+                                <form method="POST" action="{{ url_for('change_computer_status', id=computer.id, status='RESTART') }}" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Restart">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                </form>
+                                
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="confirmDelete('{{ computer.name }}', '{{ url_for('delete_computer', id=computer.id) }}')" 
+                                        title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <nav aria-label="Computer pagination">
+            <ul class="pagination justify-content-center">
+                {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('computers', page=pagination.prev_num, search=search) }}">Previous</a>
+                    </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != pagination.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('computers', page=page_num, search=search) }}">{{ page_num }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('computers', page=pagination.next_num, search=search) }}">Next</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        {% else %}
+        <p class="text-muted text-center">No computers found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(computerName, deleteUrl) {
+    if (confirm('Are you sure you want to delete computer "' + computerName + '"? This action cannot be undone.')) {
+        // Create a form and submit it
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = deleteUrl;
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}
