@@ -1,5 +1,5 @@
 """
-Configuration settings for the Active Directory Clone application.
+Configuration settings for the Active Directory application.
 """
 import os
 from datetime import timedelta
@@ -17,11 +17,13 @@ class Config:
     # Flask-Login settings
     REMEMBER_COOKIE_DURATION = timedelta(days=7)
     SESSION_PROTECTION = 'strong'
+    PERMANENT_SESSION_LIFETIME = timedelta(days=7)
+    SESSION_REFRESH_EACH_REQUEST = True  # Refresh session on each request to update user permissions
     
     # Password policy settings
     MIN_PASSWORD_LENGTH = 8
     MAX_FAILED_ATTEMPTS = 3
-    ACCOUNT_LOCKOUT_DURATION = timedelta(minutes=15)
+    ACCOUNT_LOCKOUT_DURATION = timedelta(minutes=1)
     
     # Application settings
     ITEMS_PER_PAGE = 20

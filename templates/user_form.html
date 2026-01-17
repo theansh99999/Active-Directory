@@ -84,20 +84,6 @@
                         </div>
                         
                         <div class="col-md-6 mb-3">
-                            {{ form.confirm_password.label(class="form-label") }}
-                            {{ form.confirm_password(class="form-control") }}
-                            {% if form.confirm_password.errors %}
-                                <div class="text-danger">
-                                    {% for error in form.confirm_password.errors %}
-                                        <small>{{ error }}</small>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
                             {{ form.role.label(class="form-label") }}
                             {{ form.role(class="form-select") }}
                             {% if form.role.errors %}
@@ -108,7 +94,9 @@
                                 </div>
                             {% endif %}
                         </div>
-                        
+                    </div>
+                    
+                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <div class="form-check mt-4">
                                 {{ form.is_active(class="form-check-input") }}

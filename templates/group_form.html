@@ -2,7 +2,10 @@
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2"><i class="bi bi-plus-circle"></i> {{ action }} Group</h1>
+    <div>
+        <h1 class="h2"><i class="bi bi-shield-lock"></i> {{ action }} Group - Set Member Rights</h1>
+        <p class="text-muted small">Define the permissions/rights that all members will inherit</p>
+    </div>
     <a href="{{ url_for('groups') }}" class="btn btn-secondary">
         <i class="bi bi-arrow-left"></i> Back to Groups
     </a>
@@ -39,20 +42,137 @@
                         {% endif %}
                     </div>
                     
+                    <!-- IMPORTANT: Group Rights/Permissions Section -->
+                    <div class="card bg-light mb-4 border-primary border-2">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="bi bi-shield-lock"></i> <strong>🔐 Group Rights/Permissions</strong></h5>
+                            <small>Every member will automatically inherit these rights</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                {{ form.permissions.label(class="form-label fw-bold fs-5") }}
+                                {{ form.permissions(class="form-select form-select-lg") }}
+                                {% if form.permissions.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.permissions.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Rights Comparison -->
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <div class="border-start border-4 border-info ps-3 mb-3">
+                                        <h6 class="mb-2"><i class="bi bi-eye"></i> <strong>Read-Only</strong></h6>
+                                        <small class="text-muted">
+                                            Members can:
+                                            <ul class="mb-0 mt-2 ps-3">
+                                                <li>✓ View group resources</li>
+                                                <li>✓ Access information</li>
+                                                <li>✓ Download files</li>
+                                                <li>✗ Cannot edit</li>
+                                                <li>✗ Cannot delete</li>
+                                            </ul>
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="border-start border-4 border-success ps-3 mb-3">
+                                        <h6 class="mb-2"><i class="bi bi-pencil-square"></i> <strong>Read/Write</strong></h6>
+                                        <small class="text-muted">
+                                            Members can:
+                                            <ul class="mb-0 mt-2 ps-3">
+                                                <li>✓ View resources</li>
+                                                <li>✓ Edit/Modify</li>
+                                                <li>✓ Create items</li>
+                                                <li>✓ Delete items</li>
+                                                <li>✓ Full access</li>
+                                            </ul>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info mt-3 mb-0">
+                                <strong><i class="bi bi-lightbulb"></i> How Group Rights Work:</strong><br>
+                                <small>
+                                    ✓ You set rights for the entire group<br>
+                                    ✓ All members automatically inherit these rights<br>
+                                    ✓ Members have the same rights while in the group<br>
+                                    ✓ Rights removed immediately when member leaves<br>
+                                    ✓ Individual roles manageable from "Manage Members"
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Admin Rights Section -->
+                    <div class="card bg-warning bg-opacity-10 mb-4 border-warning border-2">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0"><i class="bi bi-shield-check"></i> <strong>👑 Admin Rights</strong></h5>
+                            <small>Grant administrative privileges to all group members</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check form-switch">
+                                {{ form.grant_admin_rights(class="form-check-input", id="grant_admin_rights", role="switch") }}
+                                <label class="form-check-label" for="grant_admin_rights">
+                                    <strong>Grant Admin Rights to All Members</strong>
+                                </label>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                <i class="bi bi-info-circle"></i> When enabled, all members in this group will have:
+                                <ul class="mt-2 mb-0 ps-3">
+                                    <li>✓ Add/Delete users</li>
+                                    <li>✓ Create/Edit/Delete groups</li>
+                                    <li>✓ Manage computers</li>
+                                    <li>✓ Manage organizational units</li>
+                                    <li>✓ View audit logs</li>
+                                    <li>✗ Rights revoked if removed from group</li>
+                                </ul>
+                            </small>
+                            <div class="alert alert-warning mt-3 mb-0">
+                                <strong>⚠️ Warning:</strong> Admin rights grant full administrative access. Use with caution!
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Users Selection Section -->
                     <div class="mb-3">
-                        {{ form.permissions.label(class="form-label") }}
-                        {{ form.permissions(class="form-select") }}
-                        {% if form.permissions.errors %}
+                        <label for="users" class="form-label">
+                            <i class="bi bi-people"></i> Add Users to Group (Optional)
+                        </label>
+                        <div class="input-group mb-2">
+                            <input type="text" id="userSearch" class="form-control" placeholder="Search users by name or email..." autocomplete="off">
+                            <button type="button" class="btn btn-outline-secondary" onclick="clearUserSearch()">
+                                <i class="bi bi-x-circle"></i> Clear Search
+                            </button>
+                        </div>
+                        
+                        {{ form.users(class="form-select", size=8, multiple=True, id="users") }}
+                        
+                        {% if form.users.errors %}
                             <div class="text-danger">
-                                {% for error in form.permissions.errors %}
+                                {% for error in form.users.errors %}
                                     <small>{{ error }}</small>
                                 {% endfor %}
                             </div>
                         {% endif %}
-                        <div class="form-text">
-                            <strong>Read Only:</strong> Members can view resources but cannot modify them.<br>
-                            <strong>Read/Write:</strong> Members can view and modify resources.
-                        </div>
+                        
+                        <small class="form-text text-muted d-block mt-2">
+                            <i class="bi bi-info-circle"></i> 
+                            <strong>How to select multiple users:</strong><br>
+                            • Windows/Linux: Hold <kbd>Ctrl</kbd> and click each user<br>
+                            • Mac: Hold <kbd>Cmd</kbd> and click each user<br>
+                            • Or: Click first user, hold <kbd>Shift</kbd>, click last user to select a range
+                        </small>
+                    </div>
+
+                    <!-- Selected Users Preview -->
+                    <div id="selectedUsersPreview" class="mb-3" style="display:none;">
+                        <label class="form-label"><strong>Selected Users:</strong></label>
+                        <div id="selectedUsersList" class="border rounded p-2 bg-light" style="max-height: 120px; overflow-y: auto;"></div>
                     </div>
                     
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -64,4 +184,62 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userSelect = document.getElementById('users');
+    const userSearch = document.getElementById('userSearch');
+    const selectedUsersPreview = document.getElementById('selectedUsersPreview');
+    const selectedUsersList = document.getElementById('selectedUsersList');
+    
+    // Store original options
+    const allOptions = Array.from(userSelect.options);
+    
+    // Search functionality
+    userSearch.addEventListener('keyup', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        allOptions.forEach(option => {
+            if (searchTerm === '' || option.text.toLowerCase().includes(searchTerm)) {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+    });
+    
+    // Update preview of selected users
+    userSelect.addEventListener('change', function() {
+        const selectedOptions = Array.from(userSelect.selectedOptions);
+        if (selectedOptions.length > 0) {
+            selectedUsersPreview.style.display = 'block';
+            selectedUsersList.innerHTML = selectedOptions.map(opt => 
+                `<span class="badge bg-info me-2 mb-2"><i class="bi bi-check-circle"></i> ${opt.text}</span>`
+            ).join('');
+        } else {
+            selectedUsersPreview.style.display = 'none';
+            selectedUsersList.innerHTML = '';
+        }
+    });
+});
+
+function clearUserSearch() {
+    document.getElementById('userSearch').value = '';
+    document.getElementById('users').querySelectorAll('option').forEach(opt => {
+        opt.style.display = '';
+    });
+}
+</script>
+<style>
+#users option {
+    padding: 8px;
+}
+
+.badge {
+    font-size: 0.9rem;
+    padding: 6px 12px;
+}
+</style>
 {% endblock %}

@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2"><i class="bi bi-collection"></i> Group Management</h1>
-    {% if current_user.is_authenticated and current_user.role == 'Admin' %}
+    {% if current_user.is_authenticated and current_user.is_admin() %}
     <div class="btn-toolbar mb-2 mb-md-0">
         <a href="{{ url_for('add_group') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Add Group
@@ -38,7 +38,7 @@
                         <th>Permissions</th>
                         <th>Members</th>
                         <th>Created</th>
-                        {% if current_user.is_authenticated and current_user.role == 'Admin' %}
+                        {% if current_user.is_authenticated and current_user.is_admin() %}
                         <th>Actions</th>
                         {% endif %}
                     </tr>
@@ -52,6 +52,11 @@
                             <span class="badge {% if group.permissions == 'read-write' %}bg-warning{% else %}bg-info{% endif %}">
                                 {{ group.permissions|title }}
                             </span>
+                            {% if group.grant_admin_rights %}
+                            <span class="badge bg-danger ms-1" title="Members have admin rights">
+                                <i class="bi bi-shield-check"></i> Admin
+                            </span>
+                            {% endif %}
                         </td>
                         <td>
                             <span class="badge bg-secondary">{{ group.members|length }} members</span>
@@ -59,9 +64,13 @@
                         <td>
                             <small>{{ group.created_at.strftime('%Y-%m-%d') }}</small>
                         </td>
-                        {% if current_user.is_authenticated and current_user.role == 'Admin' %}
+                        {% if current_user.is_authenticated and current_user.is_admin() %}
                         <td>
                             <div class="btn-group" role="group">
+                                <a href="{{ url_for('group_members', id=group.id) }}" 
+                                   class="btn btn-sm btn-outline-info" title="Manage Members">
+                                    <i class="bi bi-people"></i>
+                                </a>
                                 <a href="{{ url_for('edit_group', id=group.id) }}" 
                                    class="btn btn-sm btn-outline-primary" title="Edit">
                                     <i class="bi bi-pencil"></i>

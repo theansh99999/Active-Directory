@@ -2,8 +2,8 @@
 Forms for the Active Directory Clone application.
 """
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, TextAreaField
-from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError, Regexp
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, TextAreaField, SelectMultipleField
+from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError, Regexp, Optional
 from models import User, Group, OrganizationalUnit, Computer
 
 class LoginForm(FlaskForm):
@@ -34,6 +34,7 @@ class UserForm(FlaskForm):
     first_name = StringField('First Name', validators=[DataRequired(), Length(max=50)])
     last_name = StringField('Last Name', validators=[DataRequired(), Length(max=50)])
     password = PasswordField('Password', validators=[
+        Optional(),
         Length(min=8, message='Password must be at least 8 characters long.'),
         Regexp(r'(?=.*[A-Z])', message='Password must contain at least one uppercase letter.'),
         Regexp(r'(?=.*\d)', message='Password must contain at least one number.')
@@ -46,15 +47,14 @@ class UserForm(FlaskForm):
         super(UserForm, self).__init__(*args, **kwargs)
         self.original_user = original_user
         
-        # Make password optional for editing existing users
-        if original_user:
+        # If creating new user, make password required
+        if not original_user:
             self.password.validators = [
+                DataRequired(),
                 Length(min=8, message='Password must be at least 8 characters long.'),
                 Regexp(r'(?=.*[A-Z])', message='Password must contain at least one uppercase letter.'),
                 Regexp(r'(?=.*\d)', message='Password must contain at least one number.')
             ]
-        else:
-            self.password.validators.insert(0, DataRequired())
     
     def validate_username(self, username):
         if self.original_user is None or username.data != self.original_user.username:
@@ -68,18 +68,6 @@ class UserForm(FlaskForm):
             if user is not None:
                 raise ValidationError('Email already registered. Please choose a different email.')
 
-class UserForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    first_name = StringField('First Name', validators=[DataRequired()])
-    last_name = StringField('Last Name', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
-    confirm_password = PasswordField('Confirm Password', validators=[
-        EqualTo('password', message='Passwords must match')
-    ])
-    role = SelectField('Role', choices=[('admin', 'Admin'), ('user', 'User')], validators=[DataRequired()])
-    is_active = BooleanField('Active', default=True)
-    submit = SubmitField('Submit')
 class PasswordResetForm(FlaskForm):
     """Password reset form for admin use."""
     new_password = PasswordField('New Password', validators=[
@@ -101,17 +89,49 @@ class GroupForm(FlaskForm):
     permissions = SelectField('Permissions', 
                             choices=[('read-only', 'Read Only'), ('read-write', 'Read Write')], 
                             validators=[DataRequired()])
+    grant_admin_rights = BooleanField('Grant Admin Rights to Members', default=False)
+    users = SelectMultipleField('Add Users to Group (Optional)', coerce=int, validators=[])
     submit = SubmitField('Save Group')
     
     def __init__(self, original_group=None, *args, **kwargs):
         super(GroupForm, self).__init__(*args, **kwargs)
         self.original_group = original_group
+        
+        # Populate available users - exclude users already in group when editing
+        if original_group:
+            existing_user_ids = {member.id for member in original_group.members}
+            available_users = User.query.filter(~User.id.in_(existing_user_ids)).all()
+        else:
+            available_users = User.query.all()
+        
+        self.users.choices = [(user.id, f'{user.username} - {user.email} ({user.first_name} {user.last_name})') for user in available_users]
     
     def validate_name(self, name):
         if self.original_group is None or name.data != self.original_group.name:
             group = Group.query.filter_by(name=name.data).first()
             if group is not None:
                 raise ValidationError('Group name already exists. Please choose a different name.')
+
+class AddUserToGroupForm(FlaskForm):
+    """Form to add users to a group."""
+    user_id = SelectField('User', coerce=int, validators=[DataRequired()])
+    role = SelectField('Role in Group', 
+                      choices=[('User', 'User'), ('Admin', 'Admin')], 
+                      validators=[DataRequired()])
+    submit = SubmitField('Add User to Group')
+    
+    def __init__(self, group=None, *args, **kwargs):
+        super(AddUserToGroupForm, self).__init__(*args, **kwargs)
+        self.group = group
+        
+        # Populate available users (exclude those already in the group)
+        if group:
+            existing_user_ids = {member.id for member in group.members}
+            available_users = User.query.filter(~User.id.in_(existing_user_ids)).all()
+        else:
+            available_users = User.query.all()
+        
+        self.user_id.choices = [(user.id, f'{user.username} ({user.email})') for user in available_users]
 
 class OrganizationalUnitForm(FlaskForm):
     """Organizational Unit creation and editing form."""

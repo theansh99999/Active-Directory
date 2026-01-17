@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <div>
+        <h1 class="h2"><i class="bi bi-people"></i> Manage Group Members</h1>
+        <p class="text-muted">Group: <strong>{{ group.name }}</strong></p>
+    </div>
+    <div>
+        <a href="{{ url_for('groups') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Groups
+        </a>
+    </div>
+</div>
+
+<!-- Group Info Card with Permissions Highlight -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card border-primary border-2">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-shield-lock"></i> <strong>{{ group.name }}</strong> - Group Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Description:</strong> {{ group.description or 'N/A' }}</p>
+                <p><strong>Total Members:</strong> <span class="badge bg-secondary">{{ members|length }}</span></p>
+                
+                <!-- Prominently Display Inherited Permissions -->
+                <hr class="my-3">
+                <div class="alert {% if group.permissions == 'read-write' %}alert-warning{% else %}alert-info{% endif %} mb-3">
+                    <strong><i class="bi bi-info-circle"></i> Members' Inherited Permissions:</strong><br>
+                    <span class="fs-5">
+                        <strong class="{% if group.permissions == 'read-write' %}text-warning{% else %}text-info{% endif %}">
+                            {{ group.permissions|title }} Access
+                        </strong>
+                    </span>
+                    <br>
+                    <small class="mt-2 d-block">
+                        <strong>All {{ members|length }} members of this group automatically inherit these permissions.</strong><br>
+                        Members retain these permissions as long as they remain in the group.
+                        {% if group.permissions == 'read-write' %}
+                        They can: view, create, edit, and delete resources.
+                        {% else %}
+                        They can: view resources only (read-only access).
+                        {% endif %}
+                    </small>
+                </div>
+                
+                <!-- Admin Rights Section -->
+                {% if group.grant_admin_rights %}
+                <div class="alert alert-warning mb-0">
+                    <strong><i class="bi bi-shield-check"></i> 👑 Admin Rights Granted</strong><br>
+                    <small>
+                        All members in this group have FULL ADMIN access:
+                        <ul class="mt-2 mb-0 ps-3">
+                            <li>✓ Add/Delete users</li>
+                            <li>✓ Create/Edit/Delete groups</li>
+                            <li>✓ Manage computers</li>
+                            <li>✓ Manage organizational units</li>
+                            <li>✓ View audit logs</li>
+                        </ul>
+                    </small>
+                </div>
+                {% else %}
+                <div class="alert alert-secondary mb-0">
+                    <small><i class="bi bi-info-circle"></i> <strong>Admin Rights:</strong> Not granted to this group</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User to Group Section -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Add User to Group</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_user_to_group', id=group.id) }}">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        <label for="user_id" class="form-label">{{ form.user_id.label }}</label>
+                        {% if form.user_id.errors %}
+                            {{ form.user_id(class="form-control is-invalid") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.user_id.errors %}
+                                    {{ error }}<br>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.user_id(class="form-control") }}
+                        {% endif %}
+                        <small class="form-text text-muted">Select a user to add to this group</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="role" class="form-label">{{ form.role.label }}</label>
+                        {% if form.role.errors %}
+                            {{ form.role(class="form-control is-invalid") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.role.errors %}
+                                    {{ error }}<br>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.role(class="form-control") }}
+                        {% endif %}
+                        <small class="form-text text-muted">Assign a role for the user within this group</small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Add User
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Members -->
+<div class="row mb-3">
+    <div class="col-md-8">
+        <form method="GET" class="d-flex">
+            <input type="text" name="search" class="form-control" placeholder="Search members by username or email..." 
+                   value="{{ search|default('') }}" onchange="this.form.submit()">
+            <button type="submit" class="btn btn-outline-secondary ms-2">
+                <i class="bi bi-search"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Members List -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Current Members ({{ members|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% if members %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Full Name</th>
+                                <th>User Role</th>
+                                <th>Added</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in members %}
+                            <tr>
+                                <td>
+                                    <strong>{{ member.username }}</strong>
+                                </td>
+                                <td>{{ member.email }}</td>
+                                <td>{{ member.first_name }} {{ member.last_name }}</td>
+                                <td>
+                                    <span class="badge {% if member.role == 'Admin' %}bg-danger{% else %}bg-success{% endif %}">
+                                        {{ member.role }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small>{{ member.created_at.strftime('%Y-%m-%d') }}</small>
+                                </td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('remove_user_from_group', group_id=group.id, user_id=member.id) }}" 
+                                          style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                onclick="return confirm('Remove {{ member.username }} from this group?')" 
+                                                title="Remove">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">
+                    <i class="bi bi-inbox"></i> No members in this group yet. Add your first member using the form above.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Optional: Add autocomplete or dynamic filtering
+document.addEventListener('DOMContentLoaded', function() {
+    const userSelect = document.getElementById('user_id');
+    if (userSelect) {
+        // You can enhance this with autocomplete if desired
+        userSelect.addEventListener('change', function() {
+            // Handle selection if needed
+        });
+    }
+});
+</script>
+{% endblock %}

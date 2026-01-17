@@ -10,8 +10,8 @@ import os
 
 from config import config
 from models import db, User, Group, OrganizationalUnit, Computer, AuditLog
-from forms import LoginForm, UserForm, PasswordResetForm, GroupForm, OrganizationalUnitForm, ComputerForm, AdminPasswordResetForm
-from auth import admin_required, login_required_with_message, get_client_ip
+from forms import LoginForm, UserForm, PasswordResetForm, GroupForm, OrganizationalUnitForm, ComputerForm, AdminPasswordResetForm, AddUserToGroupForm
+from auth import admin_required, login_required_with_message, get_client_ip, read_write_required
 
 def create_app(config_name=None):
     """Application factory pattern."""
@@ -34,6 +34,20 @@ def create_app(config_name=None):
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
+    
+    # Ensure user groups are refreshed on each request to reflect current permissions
+    @app.before_request
+    def before_request():
+        from flask_login import current_user
+        if current_user.is_authenticated:
+            try:
+                # Expire the user object to force reload from database
+                # This ensures group memberships and permissions are always current
+                db.session.expire(current_user)
+                # Also expire all related objects
+                db.session.expire_all()
+            except Exception:
+                pass  # If refresh fails, continue with current user object
     
     return app
 
@@ -204,6 +218,7 @@ def users():
 
 @app.route('/users/add', methods=['GET', 'POST'])
 @admin_required
+@read_write_required
 def add_user():
     """Add new user."""
     form = UserForm()
@@ -237,10 +252,20 @@ def add_user():
 
 @app.route('/users/edit/<int:id>', methods=['GET', 'POST'])
 @admin_required
+@read_write_required
 def edit_user(id):
     """Edit existing user."""
     user = User.query.get_or_404(id)
-    form = UserForm(original_user=user, obj=user)
+    form = UserForm(original_user=user)
+    
+    # Pre-populate form on GET request
+    if request.method == 'GET':
+        form.username.data = user.username
+        form.email.data = user.email
+        form.first_name.data = user.first_name
+        form.last_name.data = user.last_name
+        form.role.data = user.role
+        form.is_active.data = user.is_active
     
     if form.validate_on_submit():
         user.username = form.username.data
@@ -250,8 +275,12 @@ def edit_user(id):
         user.role = form.role.data
         user.is_active = form.is_active.data
         
-        if form.password.data:
-            user.set_password(form.password.data)
+        if form.password.data and form.password.data.strip():
+            try:
+                user.set_password(form.password.data)
+            except ValueError:
+                flash('Password does not meet security requirements.', 'error')
+                return render_template('user_form.html', title='Edit User', form=form, action='Edit', user=user)
         
         db.session.commit()
         
@@ -271,6 +300,7 @@ def edit_user(id):
 
 @app.route('/users/delete/<int:id>', methods=['POST'])
 @admin_required
+@read_write_required
 def delete_user(id):
     """Delete user."""
     user = User.query.get_or_404(id)
@@ -341,6 +371,7 @@ def groups():
 
 @app.route('/groups/add', methods=['GET', 'POST'])
 @admin_required
+@read_write_required
 def add_group():
     """Add new group."""
     form = GroupForm()
@@ -348,18 +379,39 @@ def add_group():
         group = Group(
             name=form.name.data,
             description=form.description.data,
-            permissions=form.permissions.data
+            permissions=form.permissions.data,
+            grant_admin_rights=form.grant_admin_rights.data
         )
         
         db.session.add(group)
         db.session.commit()
         
-        # Log action
+        # Add selected users to the group
+        if form.users.data:
+            for user_id in form.users.data:
+                user = User.query.get(user_id)
+                if user:
+                    group.members.append(user)
+            db.session.commit()
+            
+            # Log each user addition
+            for user_id in form.users.data:
+                user = User.query.get(user_id)
+                if user:
+                    AuditLog.log_action(
+                        user_id=current_user.id,
+                        action='User Added to Group',
+                        target=f'Group: {group.name}',
+                        details=f'User {user.username} added during group creation. Will inherit: {group.permissions} permissions{"+ Admin rights" if group.grant_admin_rights else ""}',
+                        ip_address=get_client_ip()
+                    )
+        
+        # Log group creation
         AuditLog.log_action(
             user_id=current_user.id,
             action='Group Created',
             target=f'Group: {group.name}',
-            details=f'New group created with permissions: {group.permissions}',
+            details=f'New group created with permissions: {group.permissions}. Admin rights: {"Yes" if group.grant_admin_rights else "No"}. Users added: {len(form.users.data) if form.users.data else 0}',
             ip_address=get_client_ip()
         )
         
@@ -370,6 +422,7 @@ def add_group():
 
 @app.route('/groups/edit/<int:id>', methods=['GET', 'POST'])
 @admin_required
+@read_write_required
 def edit_group(id):
     """Edit existing group."""
     group = Group.query.get_or_404(id)
@@ -379,6 +432,7 @@ def edit_group(id):
         group.name = form.name.data
         group.description = form.description.data
         group.permissions = form.permissions.data
+        group.grant_admin_rights = form.grant_admin_rights.data
         
         db.session.commit()
         
@@ -387,7 +441,7 @@ def edit_group(id):
             user_id=current_user.id,
             action='Group Updated',
             target=f'Group: {group.name}',
-            details=f'Group information updated',
+            details=f'Group information updated. Admin rights: {"Yes" if group.grant_admin_rights else "No"}',
             ip_address=get_client_ip()
         )
         
@@ -398,6 +452,7 @@ def edit_group(id):
 
 @app.route('/groups/delete/<int:id>', methods=['POST'])
 @admin_required
+@read_write_required
 def delete_group(id):
     """Delete group."""
     group = Group.query.get_or_404(id)
@@ -417,6 +472,107 @@ def delete_group(id):
     
     flash(f'Group {group_name} has been deleted successfully.', 'success')
     return redirect(url_for('groups'))
+
+@app.route('/groups/<int:id>/members')
+@admin_required
+def group_members(id):
+    """View and manage group members."""
+    group = Group.query.get_or_404(id)
+    form = AddUserToGroupForm(group=group)
+    
+    # Get search parameter
+    search = request.args.get('search', '', type=str)
+    
+    # Filter members based on search
+    members = group.members
+    if search:
+        members = [m for m in members if search.lower() in m.username.lower() or search.lower() in m.email.lower()]
+    
+    return render_template('group_members.html', title=f'Manage Members - {group.name}', 
+                         group=group, members=members, form=form, search=search)
+
+@app.route('/groups/<int:id>/add-member', methods=['POST'])
+@admin_required
+@read_write_required
+def add_user_to_group(id):
+    """Add a user to a group."""
+    group = Group.query.get_or_404(id)
+    form = AddUserToGroupForm(group=group)
+    
+    if form.validate_on_submit():
+        user = User.query.get_or_404(form.user_id.data)
+        
+        # Check if user is already in group
+        if user in group.members:
+            flash(f'User {user.username} is already in this group.', 'warning')
+        else:
+            # Add user to group with role
+            group.members.append(user)
+            db.session.commit()
+            
+            # Log action
+            AuditLog.log_action(
+                user_id=current_user.id,
+                action='User Added to Group',
+                target=f'Group: {group.name}',
+                details=f'User {user.username} added with role: {form.role.data}',
+                ip_address=get_client_ip()
+            )
+            
+            flash(f'User {user.username} has been added to group {group.name} successfully.', 'success')
+    else:
+        flash('Failed to add user to group.', 'error')
+    
+    return redirect(url_for('group_members', id=group.id))
+
+@app.route('/groups/<int:group_id>/remove-member/<int:user_id>', methods=['POST'])
+@admin_required
+@read_write_required
+def remove_user_from_group(group_id, user_id):
+    """Remove a user from a group."""
+    group = Group.query.get_or_404(group_id)
+    user = User.query.get_or_404(user_id)
+    
+    # Check if user is in group
+    if user in group.members:
+        group.members.remove(user)
+        db.session.commit()
+        
+        # Log action
+        AuditLog.log_action(
+            user_id=current_user.id,
+            action='User Removed from Group',
+            target=f'Group: {group.name}',
+            details=f'User {user.username} removed from group',
+            ip_address=get_client_ip()
+        )
+        
+        flash(f'User {user.username} has been removed from group {group.name}.', 'success')
+    else:
+        flash(f'User {user.username} is not in this group.', 'error')
+    
+    return redirect(url_for('group_members', id=group_id))
+
+@app.route('/groups/<int:id>/search-users')
+@admin_required
+def search_group_users(id):
+    """API endpoint to search users for adding to group."""
+    group = Group.query.get_or_404(id)
+    query = request.args.get('q', '', type=str)
+    
+    # Get users not already in the group
+    existing_user_ids = {member.id for member in group.members}
+    available_users = User.query.filter(~User.id.in_(existing_user_ids)).all()
+    
+    # Filter based on search query
+    filtered_users = []
+    if query:
+        filtered_users = [u for u in available_users if query.lower() in u.username.lower() or query.lower() in u.email.lower()]
+    else:
+        filtered_users = available_users
+    
+    results = [{'id': u.id, 'username': u.username, 'email': u.email} for u in filtered_users[:10]]
+    return jsonify(results)
 
 @app.route('/computers')
 @login_required_with_message
@@ -438,6 +594,7 @@ def computers():
 
 @app.route('/computers/add', methods=['GET', 'POST'])
 @admin_required
+@read_write_required
 def add_computer():
     """Add new computer."""
     form = ComputerForm()
@@ -470,6 +627,7 @@ def add_computer():
 
 @app.route('/computers/edit/<int:id>', methods=['GET', 'POST'])
 @admin_required
+@read_write_required
 def edit_computer(id):
     """Edit existing computer."""
     computer = Computer.query.get_or_404(id)
@@ -506,6 +664,7 @@ def edit_computer(id):
 
 @app.route('/computers/delete/<int:id>', methods=['POST'])
 @admin_required
+@read_write_required
 def delete_computer(id):
     """Delete computer."""
     computer = Computer.query.get_or_404(id)
@@ -562,6 +721,7 @@ def organizational_units():
 
 @app.route('/ous/add', methods=['GET', 'POST'])
 @admin_required
+@read_write_required
 def add_ou():
     """Add new organizational unit."""
     form = OrganizationalUnitForm()
@@ -591,6 +751,7 @@ def add_ou():
 
 @app.route('/ous/edit/<int:id>', methods=['GET', 'POST'])
 @admin_required
+@read_write_required
 def edit_ou(id):
     """Edit existing organizational unit."""
     ou = OrganizationalUnit.query.get_or_404(id)
@@ -619,6 +780,7 @@ def edit_ou(id):
 
 @app.route('/ous/delete/<int:id>', methods=['POST'])
 @admin_required
+@read_write_required
 def delete_ou(id):
     """Delete organizational unit."""
     ou = OrganizationalUnit.query.get_or_404(id)

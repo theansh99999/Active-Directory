@@ -9,10 +9,12 @@ import re
 
 db = SQLAlchemy()
 
-# Association table for many-to-many relationship between users and groups
-user_groups = db.Table('user_groups',
+# Association table for many-to-many relationship between users and groups with roles
+group_members = db.Table('group_members',
     db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
-    db.Column('group_id', db.Integer, db.ForeignKey('group.id'), primary_key=True)
+    db.Column('group_id', db.Integer, db.ForeignKey('group.id'), primary_key=True),
+    db.Column('role', db.String(20), nullable=False, default='User'),  # User or Admin within group
+    db.Column('added_at', db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 )
 
 class User(UserMixin, db.Model):
@@ -32,7 +34,7 @@ class User(UserMixin, db.Model):
     last_login = db.Column(db.DateTime, nullable=True)
     
     # Relationships
-    groups = db.relationship('Group', secondary=user_groups, lazy='subquery',
+    groups = db.relationship('Group', secondary=group_members, lazy='subquery',
                            backref=db.backref('members', lazy=True))
     audit_logs = db.relationship('AuditLog', backref='user', lazy=True)
     
@@ -81,6 +83,24 @@ class User(UserMixin, db.Model):
         if self.failed_attempts >= Config.MAX_FAILED_ATTEMPTS:
             self.lock_account()
     
+    def is_admin(self):
+        """Check if user is admin (by role or group membership)."""
+        # Check direct admin role
+        if self.role == 'Admin':
+            return True
+        # Check if member of any admin-granting group
+        admin_groups = [g for g in self.groups if g.grant_admin_rights]
+        return len(admin_groups) > 0
+    
+    def has_read_write_permission(self):
+        """Check if user has read-write permission (through role or group membership)."""
+        # Admins always have read-write
+        if self.is_admin():
+            return True
+        # Check if member of any read-write permission group
+        read_write_groups = [g for g in self.groups if g.permissions == 'read-write']
+        return len(read_write_groups) > 0
+    
     def __repr__(self):
         return f'<User {self.username}>'
 
@@ -91,7 +111,14 @@ class Group(db.Model):
     name = db.Column(db.String(100), unique=True, nullable=False, index=True)
     description = db.Column(db.Text, nullable=True)
     permissions = db.Column(db.String(50), nullable=False, default='read-only')  # read-only, read-write
+    grant_admin_rights = db.Column(db.Boolean, default=False, nullable=False)  # Whether members get admin role
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    
+    def get_member_role(self, user):
+        """Get effective role for a user in this group (considering admin rights)."""
+        if self.grant_admin_rights and user in self.members:
+            return 'Admin'
+        return user.role
     
     def __repr__(self):
         return f'<Group {self.name}>'

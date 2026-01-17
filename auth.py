@@ -13,8 +13,29 @@ def admin_required(f):
             flash('Please log in to access this page.', 'warning')
             return redirect(url_for('login', next=request.url))
         
-        if current_user.role != 'Admin':
+        # Check if user is admin (by role or group membership)
+        if not current_user.is_admin():
             flash('Admin access required.', 'error')
+            return redirect(url_for('dashboard'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+def read_write_required(f):
+    """Decorator to require read-write permission for access."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash('Please log in to access this page.', 'warning')
+            return redirect(url_for('login', next=request.url))
+        
+        if not current_user.is_active:
+            flash('Your account has been deactivated. Please contact an administrator.', 'error')
+            return redirect(url_for('login'))
+        
+        # Check if user has read-write permission
+        if not current_user.has_read_write_permission():
+            flash('You do not have permission to perform this action. Read-only access only.', 'error')
             return redirect(url_for('dashboard'))
         
         return f(*args, **kwargs)
