@@ -32,6 +32,7 @@ class User(UserMixin, db.Model):
     locked_until = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     last_login = db.Column(db.DateTime, nullable=True)
+    ou_id = db.Column(db.Integer, db.ForeignKey('organizational_unit.id'), nullable=True)
     
     # Relationships
     groups = db.relationship('Group', secondary=group_members, lazy='subquery',
@@ -113,6 +114,7 @@ class Group(db.Model):
     permissions = db.Column(db.String(50), nullable=False, default='read-only')  # read-only, read-write
     grant_admin_rights = db.Column(db.Boolean, default=False, nullable=False)  # Whether members get admin role
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    ou_id = db.Column(db.Integer, db.ForeignKey('organizational_unit.id'), nullable=True)
     
     def get_member_role(self, user):
         """Get effective role for a user in this group (considering admin rights)."""
@@ -131,11 +133,17 @@ class OrganizationalUnit(db.Model):
     description = db.Column(db.Text, nullable=True)
     parent_id = db.Column(db.Integer, db.ForeignKey('organizational_unit.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
+    __table_args__ = (
+        db.UniqueConstraint('name', 'parent_id', name='uq_ou_name_parent'),
+    )
     
     # Self-referential relationship for hierarchy
     parent = db.relationship('OrganizationalUnit', remote_side=[id], backref='children')
     computers = db.relationship('Computer', backref='organizational_unit', lazy=True)
+    users = db.relationship('User', backref='organizational_unit', lazy=True)
+    groups = db.relationship('Group', backref='organizational_unit', lazy=True)
     
     def get_full_path(self):
         """Get full hierarchical path of the OU."""

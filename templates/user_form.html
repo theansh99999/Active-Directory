@@ -103,6 +103,17 @@
                                 {{ form.is_active.label(class="form-check-label") }}
                             </div>
                         </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.ou_id.label(class="form-label") }}
+                            {{ form.ou_id(class="form-select") }}
+                            {% if form.ou_id.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.ou_id.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
                     
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">

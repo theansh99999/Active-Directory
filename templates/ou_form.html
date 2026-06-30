@@ -1,66 +1,586 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2"><i class="bi bi-plus-circle"></i> {{ action }} Organizational Unit</h1>
-    <a href="{{ url_for('organizational_units') }}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left"></i> Back to OUs
-    </a>
-</div>
+<style>
+    /* Enterprise UI Styles for OU Form */
+    .ou-form-container {
+        max-width: 850px;
+        margin: 0 auto;
+        padding-top: 2rem;
+    }
+    
+    .enterprise-card {
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background-color: var(--bs-body-bg);
+        transition: box-shadow 0.3s ease;
+    }
+    
+    .enterprise-card:hover {
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .card-header-enterprise {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 1rem 1.5rem;
+    }
+    
+    .form-group-icon {
+        position: relative;
+    }
+    
+    .form-group-icon i {
+        position: absolute;
+        left: 15px;
+        top: 38px;
+        color: #adb5bd;
+    }
+    
+    .form-control-icon {
+        padding-left: 40px;
+    }
+    
+    /* Custom Tree Dropdown */
+    .tree-dropdown-container {
+        position: relative;
+    }
+    
+    .tree-dropdown-btn {
+        text-align: left;
+        background-color: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
+        color: var(--bs-body-color);
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-left: 40px;
+    }
+    
+    .tree-dropdown-btn:focus {
+        border-color: #86b7fe;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    
+    .tree-dropdown-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        z-index: 1000;
+        background-color: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 0.5rem;
+    }
+    
+    .tree-dropdown-menu.show {
+        display: block;
+    }
+    
+    .tree-node {
+        padding: 0.25rem 0.5rem;
+        cursor: pointer;
+        border-radius: 0.25rem;
+        display: flex;
+        align-items: center;
+        transition: background-color 0.2s;
+    }
+    
+    .tree-node:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    .tree-node.selected {
+        background-color: rgba(13, 110, 253, 0.1);
+        font-weight: bold;
+    }
+    
+    .tree-expander {
+        cursor: pointer;
+        width: 20px;
+        display: inline-block;
+        text-align: center;
+        color: #adb5bd;
+    }
+    
+    .tree-children {
+        display: none;
+    }
+    
+    .tree-children.show {
+        display: block;
+    }
+    
+    .preview-box {
+        background-color: rgba(13, 110, 253, 0.05);
+        border: 1px solid rgba(13, 110, 253, 0.2);
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-top: 1.5rem;
+    }
+    
+    .info-panel {
+        background-color: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 1.5rem;
+        height: 100%;
+    }
+</style>
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-body">
-                <form method="POST">
-                    {{ form.hidden_tag() }}
-                    
-                    <div class="mb-3">
-                        {{ form.name.label(class="form-label") }}
-                        {{ form.name(class="form-control") }}
-                        {% if form.name.errors %}
-                            <div class="text-danger">
-                                {% for error in form.name.errors %}
-                                    <small>{{ error }}</small>
-                                {% endfor %}
+<div class="ou-form-container">
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="enterprise-card">
+                <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-diagram-3-fill text-primary me-2"></i>
+                        {{ action }} Organizational Unit
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" id="ouForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Parent OU Field -->
+                        <div class="mb-4 form-group-icon tree-dropdown-container">
+                            <label class="form-label fw-bold">Parent OU</label>
+                            <i class="bi bi-folder2-open"></i>
+                            
+                            <!-- Hidden actual select -->
+                            <div style="display:none;">
+                                {{ form.parent_id(class="form-select", id="realParentId") }}
                             </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        {{ form.description.label(class="form-label") }}
-                        {{ form.description(class="form-control", rows="3") }}
-                        {% if form.description.errors %}
-                            <div class="text-danger">
-                                {% for error in form.description.errors %}
-                                    <small>{{ error }}</small>
-                                {% endfor %}
+                            
+                            <!-- Custom Trigger -->
+                            <button type="button" class="btn tree-dropdown-btn" id="treeDropdownBtn">
+                                <span id="selectedParentText">None (Root Level)</span>
+                                <i class="bi bi-chevron-down text-muted"></i>
+                            </button>
+                            
+                            <!-- Dropdown Menu -->
+                            <div class="tree-dropdown-menu" id="treeDropdownMenu">
+                                <div class="p-2">
+                                    <input type="text" class="form-control form-control-sm" id="treeSearch" placeholder="Search Parent OU...">
+                                </div>
+                                <div id="treeContainer" class="p-1">
+                                    <div class="text-center text-muted p-2" id="treeLoading">
+                                        <div class="spinner-border spinner-border-sm" role="status"></div> Loading...
+                                    </div>
+                                    <!-- Tree nodes will be injected here -->
+                                </div>
                             </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        {{ form.parent_id.label(class="form-label") }}
-                        {{ form.parent_id(class="form-select") }}
-                        {% if form.parent_id.errors %}
-                            <div class="text-danger">
-                                {% for error in form.parent_id.errors %}
-                                    <small>{{ error }}</small>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                        <div class="form-text">
-                            Select a parent OU to create a hierarchical structure, or leave as "None" for a root-level OU.
                         </div>
+                        
+                        <!-- OU Name Field -->
+                        <div class="mb-4 form-group-icon">
+                            {{ form.name.label(class="form-label fw-bold") }}
+                            <i class="bi bi-tag"></i>
+                            <input type="text" id="name" name="name" class="form-control form-control-icon" maxlength="100" value="{{ form.name.data or '' }}" required>
+                            <div class="d-flex justify-content-between mt-1">
+                                <small class="text-danger" id="nameError"></small>
+                                <small class="text-muted" id="nameCounter">0/100</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Description Field -->
+                        <div class="mb-4 form-group-icon">
+                            {{ form.description.label(class="form-label fw-bold") }}
+                            <i class="bi bi-card-text"></i>
+                            <textarea id="description" name="description" class="form-control form-control-icon" rows="3" maxlength="500">{{ form.description.data or '' }}</textarea>
+                            <div class="d-flex justify-content-between mt-1">
+                                <small class="text-muted">Optional</small>
+                                <small class="text-muted" id="descCounter">0/500</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Live Preview -->
+                        <div class="preview-box">
+                            <h6 class="text-primary mb-2"><i class="bi bi-eye"></i> Live Preview</h6>
+                            <div class="mb-1 text-muted small">Location: <span id="previewLocation" class="text-light">Root</span></div>
+                            <div class="small">New OU Path: <strong id="previewPath" class="text-white">Root > New OU</strong></div>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top border-secondary">
+                            <a href="{{ url_for('ou_bp.organizational_units') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Back
+                            </a>
+                            <button type="button" class="btn btn-outline-warning" id="btnReset">
+                                <i class="bi bi-arrow-counterclockwise"></i> Reset
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="btnSubmit" disabled>
+                                <i class="bi bi-check-circle"></i> Create OU
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="info-panel">
+                <h5 class="mb-3"><i class="bi bi-info-circle text-info"></i> About OUs</h5>
+                <p class="text-muted small mb-4">
+                    Organizational Units are containers used to organize Users, Groups, Computers, and other OUs into a hierarchical structure. They are the primary means of delegating administrative rights and applying group policies.
+                </p>
+                
+                <div id="parentInfoBox" style="display: none;">
+                    <hr class="border-secondary">
+                    <h6 class="mb-3">Selected Parent Details</h6>
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span class="text-muted">Parent Name:</span>
+                        <strong id="infoParentName">-</strong>
                     </div>
-                    
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="{{ url_for('organizational_units') }}" class="btn btn-secondary me-md-2">Cancel</a>
-                        {{ form.submit(class="btn btn-primary") }}
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span class="text-muted">Child OUs:</span>
+                        <span class="badge bg-secondary rounded-pill" id="infoChildOus">0</span>
                     </div>
-                </form>
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span class="text-muted">Users:</span>
+                        <span class="badge bg-primary rounded-pill" id="infoUsers">0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span class="text-muted">Groups:</span>
+                        <span class="badge bg-success rounded-pill" id="infoGroups">0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span class="text-muted">Computers:</span>
+                        <span class="badge bg-info rounded-pill" id="infoComputers">0</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055;" id="toastContainer">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="toast align-items-center text-white bg-{{ 'danger' if category == 'error' else 'success' }} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="bi {{ 'bi-x-circle' if category == 'error' else 'bi-check-circle' }} me-2"></i>
+                            {{ message }}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize standard toasts
+    document.addEventListener('DOMContentLoaded', function() {
+        var toastElList = [].slice.call(document.querySelectorAll('.toast'))
+        var toastList = toastElList.map(function(toastEl) {
+            return new bootstrap.Toast(toastEl, { autohide: true, delay: 5000 })
+        });
+        toastList.forEach(toast => toast.show());
+    });
+
+    const DOM = {
+        name: document.getElementById('name'),
+        description: document.getElementById('description'),
+        nameCounter: document.getElementById('nameCounter'),
+        descCounter: document.getElementById('descCounter'),
+        nameError: document.getElementById('nameError'),
+        btnSubmit: document.getElementById('btnSubmit'),
+        btnReset: document.getElementById('btnReset'),
+        realParentId: document.getElementById('realParentId'),
+        treeDropdownBtn: document.getElementById('treeDropdownBtn'),
+        treeDropdownMenu: document.getElementById('treeDropdownMenu'),
+        selectedParentText: document.getElementById('selectedParentText'),
+        treeSearch: document.getElementById('treeSearch'),
+        treeContainer: document.getElementById('treeContainer'),
+        previewLocation: document.getElementById('previewLocation'),
+        previewPath: document.getElementById('previewPath'),
+        parentInfoBox: document.getElementById('parentInfoBox'),
+        infoParentName: document.getElementById('infoParentName'),
+        infoChildOus: document.getElementById('infoChildOus'),
+        infoUsers: document.getElementById('infoUsers'),
+        infoGroups: document.getElementById('infoGroups'),
+        infoComputers: document.getElementById('infoComputers')
+    };
+
+    let ouData = [];
+    let flatOUMap = new Map();
+    let selectedParentId = null;
+    let selectedParentPath = "Root";
+
+    // Auto-trim on blur
+    DOM.name.addEventListener('blur', (e) => {
+        e.target.value = e.target.value.trim();
+        validateForm();
+    });
+
+    // Counters and Live Validation
+    DOM.name.addEventListener('input', () => {
+        DOM.nameCounter.textContent = `${DOM.name.value.length}/100`;
+        updatePreview();
+        validateForm();
+    });
+
+    DOM.description.addEventListener('input', () => {
+        DOM.descCounter.textContent = `${DOM.description.value.length}/500`;
+    });
+
+    DOM.btnReset.addEventListener('click', () => {
+        DOM.name.value = '';
+        DOM.description.value = '';
+        selectParent(null, 'None (Root Level)', 'Root');
+        DOM.name.dispatchEvent(new Event('input'));
+        DOM.description.dispatchEvent(new Event('input'));
+    });
+
+    // Dropdown toggle logic
+    DOM.treeDropdownBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        DOM.treeDropdownMenu.classList.toggle('show');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!DOM.treeDropdownMenu.contains(e.target) && e.target !== DOM.treeDropdownBtn) {
+            DOM.treeDropdownMenu.classList.remove('show');
+        }
+    });
+
+    DOM.treeDropdownMenu.addEventListener('click', (e) => {
+        e.stopPropagation(); // Keep open when clicking inside
+    });
+
+    function showCustomToast(message, isError=false) {
+        const toastHTML = `
+            <div class="toast align-items-center text-white bg-${isError ? 'danger' : 'success'} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi ${isError ? 'bi-x-circle' : 'bi-check-circle'} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>`;
+        const container = document.getElementById('toastContainer');
+        container.insertAdjacentHTML('beforeend', toastHTML);
+        const newToast = new bootstrap.Toast(container.lastElementChild, { autohide: true, delay: 5000 });
+        newToast.show();
+    }
+
+    // Fetch Tree Data
+    fetch('/api/ous/tree')
+        .then(res => res.json())
+        .then(data => {
+            ouData = data;
+            document.getElementById('treeLoading').style.display = 'none';
+            buildFlatMap(ouData, "Root");
+            renderTree(ouData, DOM.treeContainer, 0, "Root");
+            
+            // Render root option
+            const rootNodeHTML = `
+                <div class="tree-node ${DOM.realParentId.value == '0' || DOM.realParentId.value == '' ? 'selected' : ''}" onclick="selectParent(null, 'None (Root Level)', 'Root')">
+                    <span style="padding-left: 0px">
+                        <i class="bi bi-hdd-network text-primary me-2"></i> Root Level
+                    </span>
+                </div>`;
+            DOM.treeContainer.insertAdjacentHTML('afterbegin', rootNodeHTML);
+
+            // If editing, set initial state
+            if (DOM.realParentId.value && DOM.realParentId.value !== '0' && DOM.realParentId.value !== 'None') {
+                const node = flatOUMap.get(parseInt(DOM.realParentId.value));
+                if (node) {
+                    selectParent(node.id, node.name, node.path, true);
+                }
+            }
+            
+            // Initial render state
+            DOM.name.dispatchEvent(new Event('input'));
+            DOM.description.dispatchEvent(new Event('input'));
+        })
+        .catch(err => {
+            console.error(err);
+            document.getElementById('treeLoading').innerHTML = '<span class="text-danger">Failed to load OUs</span>';
+            showCustomToast('Failed to load organizational units.', true);
+        });
+
+    function buildFlatMap(nodes, parentPath) {
+        nodes.forEach(node => {
+            const currentPath = parentPath === "Root" ? node.name : `${parentPath} > ${node.name}`;
+            flatOUMap.set(node.id, { ...node, path: currentPath });
+            if (node.children && node.children.length > 0) {
+                buildFlatMap(node.children, currentPath);
+            }
+        });
+    }
+
+    function renderTree(nodes, container, level, parentPath) {
+        nodes.forEach(node => {
+            const currentPath = parentPath === "Root" ? node.name : `${parentPath} > ${node.name}`;
+            const hasChildren = node.children && node.children.length > 0;
+            const paddingLeft = level * 20;
+
+            const nodeDiv = document.createElement('div');
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.className = `tree-node ${DOM.realParentId.value == node.id ? 'selected' : ''}`;
+            itemDiv.dataset.name = node.name.toLowerCase();
+            
+            let expander = `<span class="tree-expander" style="visibility: hidden"><i class="bi bi-chevron-right"></i></span>`;
+            if (hasChildren) {
+                expander = `<span class="tree-expander" onclick="toggleNode(this, event)"><i class="bi bi-chevron-down"></i></span>`;
+            }
+
+            itemDiv.innerHTML = `
+                <div style="padding-left: ${paddingLeft}px; display: flex; align-items: center; width: 100%;">
+                    ${expander}
+                    <div onclick="selectParent(${node.id}, '${node.name.replace(/'/g, "\\'")}', '${currentPath.replace(/'/g, "\\'")}')" style="flex-grow: 1;">
+                        <i class="bi bi-folder text-warning me-2"></i> ${node.name}
+                    </div>
+                </div>
+            `;
+            
+            nodeDiv.appendChild(itemDiv);
+
+            if (hasChildren) {
+                const childrenContainer = document.createElement('div');
+                childrenContainer.className = 'tree-children show';
+                renderTree(node.children, childrenContainer, level + 1, currentPath);
+                nodeDiv.appendChild(childrenContainer);
+            }
+
+            container.appendChild(nodeDiv);
+        });
+    }
+
+    window.toggleNode = function(el, event) {
+        event.stopPropagation();
+        const children = el.closest('.tree-node').nextElementSibling;
+        if (children && children.classList.contains('tree-children')) {
+            children.classList.toggle('show');
+            el.innerHTML = children.classList.contains('show') ? '<i class="bi bi-chevron-down"></i>' : '<i class="bi bi-chevron-right"></i>';
+        }
+    }
+
+    window.selectParent = function(id, name, path, skipToggle = false) {
+        selectedParentId = id;
+        selectedParentPath = path;
+        
+        DOM.realParentId.value = id || 0;
+        DOM.selectedParentText.innerHTML = `<i class="bi ${id ? 'bi-folder' : 'bi-hdd-network'} text-${id ? 'warning' : 'primary'} me-2"></i> ${name}`;
+        
+        // Update selection UI
+        document.querySelectorAll('.tree-node').forEach(el => el.classList.remove('selected'));
+        // We can't easily find the exact DOM node by id here without dataset, so just relying on click target styling would be better, but we re-render or just let user see text.
+        
+        if (!skipToggle) DOM.treeDropdownMenu.classList.remove('show');
+        
+        updatePreview();
+        validateForm();
+        fetchParentInfo(id);
+    }
+
+    // Search filter
+    DOM.treeSearch.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const nodes = document.querySelectorAll('.tree-node');
+        
+        if (!term) {
+            nodes.forEach(node => {
+                node.style.display = 'flex';
+                const children = node.nextElementSibling;
+                if(children) children.style.display = '';
+            });
+            return;
+        }
+
+        nodes.forEach(node => {
+            const name = node.dataset.name || '';
+            if (name.includes(term)) {
+                node.style.display = 'flex';
+                // Show parents
+                let current = node;
+                while(current.parentElement.classList.contains('tree-children')) {
+                    current = current.parentElement.previousElementSibling;
+                    if(current) current.style.display = 'flex';
+                }
+            } else {
+                node.style.display = 'none';
+            }
+        });
+    });
+
+    function updatePreview() {
+        const nameVal = DOM.name.value.trim();
+        DOM.previewLocation.textContent = selectedParentPath;
+        DOM.previewPath.textContent = nameVal ? `${selectedParentPath} > ${nameVal}` : selectedParentPath;
+    }
+
+    function validateForm() {
+        const nameVal = DOM.name.value.trim();
+        let isValid = true;
+        DOM.nameError.textContent = '';
+
+        if (!nameVal) {
+            isValid = false;
+        } else if (nameVal.length > 100) {
+            DOM.nameError.textContent = 'Name exceeds 100 characters.';
+            isValid = false;
+        } else {
+            // Check for duplicate locally
+            let childrenToCheck = [];
+            if (selectedParentId) {
+                const pNode = flatOUMap.get(selectedParentId);
+                if (pNode && pNode.children) childrenToCheck = pNode.children;
+            } else {
+                childrenToCheck = ouData; // Roots
+            }
+
+            // Exclude self if editing
+            const isEditing = window.location.pathname.includes('/edit/');
+            
+            const isDup = childrenToCheck.some(c => c.name.toLowerCase() === nameVal.toLowerCase() && (!isEditing || c.name.toLowerCase() !== "{{ form.name.data|default('', true)|lower }}"));
+            if (isDup) {
+                DOM.nameError.textContent = `An OU named '${nameVal}' already exists here.`;
+                isValid = false;
+            }
+        }
+
+        DOM.btnSubmit.disabled = !isValid;
+    }
+
+    function fetchParentInfo(id) {
+        if (!id) {
+            DOM.parentInfoBox.style.display = 'none';
+            return;
+        }
+        
+        DOM.parentInfoBox.style.display = 'block';
+        const node = flatOUMap.get(id);
+        DOM.infoParentName.textContent = node ? node.name : '-';
+        
+        fetch(`/api/ous/${id}/objects`)
+            .then(res => res.json())
+            .then(data => {
+                DOM.infoChildOus.textContent = data.children ? data.children.length : 0;
+                DOM.infoUsers.textContent = data.users ? data.users.length : 0;
+                DOM.infoGroups.textContent = data.groups ? data.groups.length : 0;
+                DOM.infoComputers.textContent = data.computers ? data.computers.length : 0;
+            })
+            .catch(err => console.error('Failed to fetch parent info'));
+    }
+</script>
 {% endblock %}

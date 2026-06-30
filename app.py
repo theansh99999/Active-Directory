@@ -53,6 +53,9 @@ def create_app(config_name=None):
 
 app = create_app()
 
+from ou_controller import ou_bp
+app.register_blueprint(ou_bp)
+
 # Routes
 @app.route('/')
 def index():
@@ -222,6 +225,13 @@ def users():
 def add_user():
     """Add new user."""
     form = UserForm()
+    
+    if request.method == 'GET' and 'ou_id' in request.args:
+        try:
+            form.ou_id.data = int(request.args.get('ou_id'))
+        except ValueError:
+            pass
+            
     if form.validate_on_submit():
         user = User(
             username=form.username.data,
@@ -229,7 +239,8 @@ def add_user():
             first_name=form.first_name.data,
             last_name=form.last_name.data,
             role=form.role.data,
-            is_active=form.is_active.data
+            is_active=form.is_active.data,
+            ou_id=form.ou_id.data if form.ou_id.data != 0 else None
         )
         user.set_password(form.password.data)
         
@@ -266,6 +277,7 @@ def edit_user(id):
         form.last_name.data = user.last_name
         form.role.data = user.role
         form.is_active.data = user.is_active
+        form.ou_id.data = user.ou_id or 0
     
     if form.validate_on_submit():
         user.username = form.username.data
@@ -274,6 +286,7 @@ def edit_user(id):
         user.last_name = form.last_name.data
         user.role = form.role.data
         user.is_active = form.is_active.data
+        user.ou_id = form.ou_id.data if form.ou_id.data != 0 else None
         
         if form.password.data and form.password.data.strip():
             try:
@@ -375,12 +388,20 @@ def groups():
 def add_group():
     """Add new group."""
     form = GroupForm()
+    
+    if request.method == 'GET' and 'ou_id' in request.args:
+        try:
+            form.ou_id.data = int(request.args.get('ou_id'))
+        except ValueError:
+            pass
+            
     if form.validate_on_submit():
         group = Group(
             name=form.name.data,
             description=form.description.data,
             permissions=form.permissions.data,
-            grant_admin_rights=form.grant_admin_rights.data
+            grant_admin_rights=form.grant_admin_rights.data,
+            ou_id=form.ou_id.data if form.ou_id.data != 0 else None
         )
         
         db.session.add(group)
@@ -428,11 +449,15 @@ def edit_group(id):
     group = Group.query.get_or_404(id)
     form = GroupForm(original_group=group, obj=group)
     
+    if request.method == 'GET':
+        form.ou_id.data = group.ou_id or 0
+    
     if form.validate_on_submit():
         group.name = form.name.data
         group.description = form.description.data
         group.permissions = form.permissions.data
         group.grant_admin_rights = form.grant_admin_rights.data
+        group.ou_id = form.ou_id.data if form.ou_id.data != 0 else None
         
         db.session.commit()
         
@@ -598,6 +623,13 @@ def computers():
 def add_computer():
     """Add new computer."""
     form = ComputerForm()
+    
+    if request.method == 'GET' and 'ou_id' in request.args:
+        try:
+            form.ou_id.data = int(request.args.get('ou_id'))
+        except ValueError:
+            pass
+            
     if form.validate_on_submit():
         computer = Computer(
             name=form.name.data,
@@ -712,94 +744,35 @@ def change_computer_status(id, status):
     flash(f'Computer {computer.name} status changed to {status}.', 'success')
     return redirect(url_for('computers'))
 
-@app.route('/ous')
-@login_required_with_message
-def organizational_units():
-    """Organizational Units management page."""
-    ous = OrganizationalUnit.query.order_by(OrganizationalUnit.name).all()
-    return render_template('ous.html', title='Organizational Units', ous=ous)
-
-@app.route('/ous/add', methods=['GET', 'POST'])
+@app.route('/api/computers/<int:id>/status', methods=['POST'])
 @admin_required
-@read_write_required
-def add_ou():
-    """Add new organizational unit."""
-    form = OrganizationalUnitForm()
-    if form.validate_on_submit():
-        ou = OrganizationalUnit(
-            name=form.name.data,
-            description=form.description.data,
-            parent_id=form.parent_id.data if form.parent_id.data != 0 else None
-        )
+def api_change_computer_status(id):
+    """API endpoint to change computer status."""
+    data = request.get_json()
+    if not data or 'status' not in data:
+        return jsonify({'error': 'Status required'}), 400
         
-        db.session.add(ou)
-        db.session.commit()
+    status = data['status']
+    if status not in ['ON', 'OFF', 'RESTART']:
+        return jsonify({'error': 'Invalid status'}), 400
         
-        # Log action
-        AuditLog.log_action(
-            user_id=current_user.id,
-            action='OU Created',
-            target=f'OU: {ou.name}',
-            details=f'New organizational unit created',
-            ip_address=get_client_ip()
-        )
-        
-        flash(f'Organizational Unit {ou.name} has been created successfully.', 'success')
-        return redirect(url_for('organizational_units'))
+    computer = Computer.query.get_or_404(id)
+    old_status = computer.status
+    computer.status = status
+    computer.last_seen = datetime.utcnow() if status == 'ON' else None
     
-    return render_template('ou_form.html', title='Add OU', form=form, action='Add')
-
-@app.route('/ous/edit/<int:id>', methods=['GET', 'POST'])
-@admin_required
-@read_write_required
-def edit_ou(id):
-    """Edit existing organizational unit."""
-    ou = OrganizationalUnit.query.get_or_404(id)
-    form = OrganizationalUnitForm(original_ou=ou, obj=ou)
-    
-    if form.validate_on_submit():
-        ou.name = form.name.data
-        ou.description = form.description.data
-        ou.parent_id = form.parent_id.data if form.parent_id.data != 0 else None
-        
-        db.session.commit()
-        
-        # Log action
-        AuditLog.log_action(
-            user_id=current_user.id,
-            action='OU Updated',
-            target=f'OU: {ou.name}',
-            details=f'Organizational unit updated',
-            ip_address=get_client_ip()
-        )
-        
-        flash(f'Organizational Unit {ou.name} has been updated successfully.', 'success')
-        return redirect(url_for('organizational_units'))
-    
-    return render_template('ou_form.html', title='Edit OU', form=form, action='Edit', ou=ou)
-
-@app.route('/ous/delete/<int:id>', methods=['POST'])
-@admin_required
-@read_write_required
-def delete_ou(id):
-    """Delete organizational unit."""
-    ou = OrganizationalUnit.query.get_or_404(id)
-    ou_name = ou.name
-    
-    db.session.delete(ou)
     db.session.commit()
     
     # Log action
     AuditLog.log_action(
         user_id=current_user.id,
-        action='OU Deleted',
-        target=f'OU: {ou_name}',
-        details=f'Organizational unit deleted',
+        action=f'Computer {status}',
+        target=f'Computer: {computer.name}',
+        details=f'Status changed from {old_status} to {status} via API',
         ip_address=get_client_ip()
     )
     
-    flash(f'Organizational Unit {ou_name} has been deleted successfully.', 'success')
-    return redirect(url_for('organizational_units'))
+    return jsonify({'success': True, 'status': status})
 
 @app.route('/logs')
 @login_required_with_message

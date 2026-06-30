@@ -90,8 +90,8 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint in ['organizational_units', 'add_ou'] %}active{% endif %}" 
-                               href="{{ url_for('organizational_units') }}">
+                            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('ou_bp.') %}active{% endif %}" 
+                               href="{{ url_for('ou_bp.organizational_units') }}">
                                 <i class="bi bi-diagram-3"></i> Organizational Units
                             </a>
                         </li>

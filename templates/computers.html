@@ -53,9 +53,9 @@
                         <td>{{ computer.operating_system or '-' }}</td>
                         <td>{{ computer.ip_address or '-' }}</td>
                         <td>
-                            <span class="badge 
+                            <span id="comp-badge-{{ computer.id }}" class="badge 
                                 {% if computer.status == 'ON' %}bg-success
-                                {% elif computer.status == 'OFF' %}bg-secondary
+                                {% elif computer.status == 'OFF' %}bg-danger
                                 {% else %}bg-warning{% endif %}">
                                 {{ computer.status }}
                             </span>
@@ -83,27 +83,22 @@
                                 </a>
                                 
                                 <!-- Status Change Buttons -->
-                                {% if computer.status != 'ON' %}
-                                <form method="POST" action="{{ url_for('change_computer_status', id=computer.id, status='ON') }}" class="d-inline">
-                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Turn ON">
-                                        <i class="bi bi-power"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
+                                <button type="button" class="btn btn-sm btn-outline-success" title="Turn ON" 
+                                        onclick="computerAction({{ computer.id }}, 'ON')"
+                                        {% if computer.status == 'ON' %}disabled{% endif %}>
+                                    <i class="bi bi-power"></i>
+                                </button>
                                 
-                                {% if computer.status != 'OFF' %}
-                                <form method="POST" action="{{ url_for('change_computer_status', id=computer.id, status='OFF') }}" class="d-inline">
-                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Turn OFF">
-                                        <i class="bi bi-stop-circle"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
+                                <button type="button" class="btn btn-sm btn-outline-secondary" title="Turn OFF" 
+                                        onclick="computerAction({{ computer.id }}, 'OFF')"
+                                        {% if computer.status == 'OFF' %}disabled{% endif %}>
+                                    <i class="bi bi-stop-circle"></i>
+                                </button>
                                 
-                                <form method="POST" action="{{ url_for('change_computer_status', id=computer.id, status='RESTART') }}" class="d-inline">
-                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Restart">
-                                        <i class="bi bi-arrow-clockwise"></i>
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-sm btn-outline-warning" title="Restart"
+                                        onclick="computerRestart({{ computer.id }})">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
                                 
                                 <button type="button" class="btn btn-sm btn-outline-danger" 
                                         onclick="confirmDelete('{{ computer.name }}', '{{ url_for('delete_computer', id=computer.id) }}')" 
@@ -167,14 +162,60 @@
 <script>
 function confirmDelete(computerName, deleteUrl) {
     if (confirm('Are you sure you want to delete computer "' + computerName + '"? This action cannot be undone.')) {
-        // Create a form and submit it
         var form = document.createElement('form');
         form.method = 'POST';
         form.action = deleteUrl;
-        
         document.body.appendChild(form);
         form.submit();
     }
+}
+
+function computerAction(id, status) {
+    fetch(`/api/computers/${id}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: status })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload(); // Simple reload to update all buttons and states
+        }
+    });
+}
+
+function computerRestart(id) {
+    // 1. Set to OFF
+    fetch(`/api/computers/${id}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'OFF' })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const badge = document.getElementById(`comp-badge-${id}`);
+            if (badge) {
+                badge.className = 'badge bg-danger';
+                badge.textContent = 'OFF';
+            }
+            
+            // 2. Wait 2 seconds, then set to ON
+            setTimeout(() => {
+                fetch(`/api/computers/${id}/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'ON' })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    }
+                });
+            }, 2000);
+        }
+    });
 }
 </script>
 {% endblock %}

@@ -42,6 +42,18 @@
                         {% endif %}
                     </div>
                     
+                    <div class="mb-3">
+                        {{ form.ou_id.label(class="form-label") }}
+                        {{ form.ou_id(class="form-select") }}
+                        {% if form.ou_id.errors %}
+                            <div class="text-danger">
+                                {% for error in form.ou_id.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
                     <!-- IMPORTANT: Group Rights/Permissions Section -->
                     <div class="card bg-light mb-4 border-primary border-2">
                         <div class="card-header bg-primary text-white">

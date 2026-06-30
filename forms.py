@@ -41,6 +41,7 @@ class UserForm(FlaskForm):
     ])
     role = SelectField('Role', choices=[('User', 'User'), ('Admin', 'Admin')], validators=[DataRequired()])
     is_active = BooleanField('Active Account', default=True)
+    ou_id = SelectField('Organizational Unit', coerce=int, validators=[])
     submit = SubmitField('Save User')
     
     def __init__(self, original_user=None, *args, **kwargs):
@@ -55,6 +56,13 @@ class UserForm(FlaskForm):
                 Regexp(r'(?=.*[A-Z])', message='Password must contain at least one uppercase letter.'),
                 Regexp(r'(?=.*\d)', message='Password must contain at least one number.')
             ]
+        
+        # Populate OU choices
+        ous = OrganizationalUnit.query.all()
+        choices = [(0, 'None')]
+        for ou in ous:
+            choices.append((ou.id, ou.name))
+        self.ou_id.choices = choices
     
     def validate_username(self, username):
         if self.original_user is None or username.data != self.original_user.username:
@@ -91,6 +99,7 @@ class GroupForm(FlaskForm):
                             validators=[DataRequired()])
     grant_admin_rights = BooleanField('Grant Admin Rights to Members', default=False)
     users = SelectMultipleField('Add Users to Group (Optional)', coerce=int, validators=[])
+    ou_id = SelectField('Organizational Unit', coerce=int, validators=[])
     submit = SubmitField('Save Group')
     
     def __init__(self, original_group=None, *args, **kwargs):
@@ -105,6 +114,13 @@ class GroupForm(FlaskForm):
             available_users = User.query.all()
         
         self.users.choices = [(user.id, f'{user.username} - {user.email} ({user.first_name} {user.last_name})') for user in available_users]
+        
+        # Populate OU choices
+        ous = OrganizationalUnit.query.all()
+        choices = [(0, 'None')]
+        for ou in ous:
+            choices.append((ou.id, ou.name))
+        self.ou_id.choices = choices
     
     def validate_name(self, name):
         if self.original_group is None or name.data != self.original_group.name:
