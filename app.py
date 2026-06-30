@@ -188,19 +188,121 @@ def dashboard():
     # Get summary statistics
     stats = {
         'total_users': User.query.count(),
-        'active_users': User.query.filter_by(is_active=True).count(),
+        'active_users': User.query.filter_by(is_active=True).filter(User.locked_until.is_(None) | (User.locked_until <= datetime.utcnow())).count(),
         'total_groups': Group.query.count(),
         'total_computers': Computer.query.count(),
         'computers_online': Computer.query.filter_by(status='ON').count(),
-        'total_ous': OrganizationalUnit.query.count()
+        'total_ous': OrganizationalUnit.query.count(),
+        'inactive_users': User.query.filter_by(is_active=False).count(),
+        'locked_users': User.query.filter(User.locked_until > datetime.utcnow()).count()
     }
+    
+    # Top OUs by objects
+    ous = OrganizationalUnit.query.all()
+    ou_counts = []
+    for ou in ous:
+        count = len(ou.users) + len(ou.groups) + len(ou.computers)
+        ou_counts.append({'name': ou.name, 'count': count})
+    stats['top_ous'] = sorted(ou_counts, key=lambda x: x['count'], reverse=True)[:5]
+    
+    # Security Alerts
+    alerts = []
+    recent_failures = AuditLog.query.filter(AuditLog.action.like('%Failed%')).order_by(AuditLog.timestamp.desc()).limit(3).all()
+    if recent_failures:
+        alerts.append({
+            'type': 'warning',
+            'icon': 'bi-shield-exclamation',
+            'title': f'{len(recent_failures)} failed login attempts',
+            'subtitle': recent_failures[0].target,
+            'time': 'Recent'
+        })
+    if stats['locked_users'] > 0:
+        alerts.append({
+            'type': 'danger',
+            'icon': 'bi-lock-fill',
+            'title': f"{stats['locked_users']} locked accounts",
+            'subtitle': 'Requires admin action',
+            'time': 'Now'
+        })
+    stats['security_alerts'] = alerts
+    
+    # Notifications for top bar
+    notifications = AuditLog.query.filter_by(user_id=current_user.id).order_by(AuditLog.timestamp.desc()).limit(5).all()
     
     # Fetch paginated logs only for the current user
     logs_query = AuditLog.query.filter_by(user_id=current_user.id).order_by(AuditLog.timestamp.desc())
     pagination = logs_query.paginate(page=page, per_page=app.config['ITEMS_PER_PAGE'], error_out=False)
     
+    # Calculate Activity Overview for the last 7 days
+    from datetime import timedelta
+    today = datetime.utcnow().date()
+    activity_labels = []
+    activity_counts = []
+    
+    # Generate last 7 days starting from 6 days ago up to today
+    for i in range(6, -1, -1):
+        target_date = today - timedelta(days=i)
+        activity_labels.append(target_date.strftime('%a'))
+        # Count logs for this date for the current user
+        # Note: Since sqlite doesn't easily do DATE() across all DBs smoothly in simple SQLAlchemy, we filter by range
+        start_of_day = datetime.combine(target_date, datetime.min.time())
+        end_of_day = datetime.combine(target_date, datetime.max.time())
+        count = AuditLog.query.filter_by(user_id=current_user.id).filter(
+            AuditLog.timestamp >= start_of_day,
+            AuditLog.timestamp <= end_of_day
+        ).count()
+        activity_counts.append(count)
+        
+    stats['activity_labels'] = activity_labels
+    stats['activity_counts'] = activity_counts
+    
     return render_template('dashboard.html', title='Dashboard', stats=stats, 
-                           recent_logs=pagination.items, pagination=pagination)
+                           recent_logs=pagination.items, pagination=pagination,
+                           notifications=notifications)
+
+@app.route('/export-report')
+@login_required_with_message
+def export_report():
+    """Export recent audit logs as a CSV file."""
+    import csv
+    import io
+    from flask import Response
+    
+    logs = AuditLog.query.filter_by(user_id=current_user.id).order_by(AuditLog.timestamp.desc()).limit(100).all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Timestamp', 'Action', 'Target', 'Details', 'IP Address'])
+    
+    for log in logs:
+        writer.writerow([
+            log.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            log.action,
+            log.target,
+            log.details or '',
+            log.ip_address or ''
+        ])
+        
+    response = Response(output.getvalue(), mimetype='text/csv')
+    response.headers['Content-Disposition'] = f'attachment; filename=audit_report_{datetime.utcnow().strftime("%Y%m%d")}.csv'
+    return response
+
+@app.route('/search')
+@login_required_with_message
+def search():
+    """Global search across all modules."""
+    q = request.args.get('q', '', type=str)
+    if not q:
+        return redirect(url_for('dashboard'))
+    
+    results = {
+        'users': User.query.filter((User.username.contains(q)) | (User.first_name.contains(q)) | (User.last_name.contains(q))).limit(5).all(),
+        'groups': Group.query.filter(Group.name.contains(q)).limit(5).all(),
+        'computers': Computer.query.filter(Computer.name.contains(q)).limit(5).all(),
+        'ous': OrganizationalUnit.query.filter(OrganizationalUnit.name.contains(q)).limit(5).all()
+    }
+    
+    return render_template('search_results.html', title='Search Results', query=q, results=results)
 
 @app.route('/users')
 @login_required_with_message

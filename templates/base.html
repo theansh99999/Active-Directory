@@ -41,11 +41,51 @@
             </button>
             
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <!-- Dashboard link removed as per request -->
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 w-50">
+                    <li class="nav-item w-100 ms-lg-4">
+                        <form class="d-flex" action="{{ url_for('search') }}" method="GET">
+                            <div class="input-group">
+                                <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
+                                <input class="form-control bg-dark border-secondary text-light" type="search" name="q" placeholder="Search users, groups, computers, OUs... (Ctrl+K)" aria-label="Search">
+                            </div>
+                        </form>
+                    </li>
                 </ul>
                 
-                <ul class="navbar-nav">
+                <ul class="navbar-nav align-items-center">
+                    <!-- Notifications Dropdown -->
+                    {% if notifications is defined %}
+                    <li class="nav-item dropdown me-3">
+                        <a class="nav-link dropdown-toggle position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-bell-fill fs-5"></i>
+                            {% if notifications %}
+                            <span class="position-absolute top-25 start-75 translate-middle p-1 bg-danger border border-light rounded-circle">
+                                <span class="visually-hidden">New alerts</span>
+                            </span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow" style="width: 320px; max-height: 400px; overflow-y: auto;">
+                            <li><h6 class="dropdown-header">Recent Activity</h6></li>
+                            {% if notifications %}
+                                {% for notif in notifications %}
+                                <li>
+                                    <a class="dropdown-item py-2" href="#">
+                                        <div class="d-flex justify-content-between">
+                                            <strong class="text-truncate" style="max-width: 200px;">{{ notif.action }}</strong>
+                                            <small class="text-muted">{{ notif.timestamp.strftime('%H:%M') }}</small>
+                                        </div>
+                                        <div class="small text-muted text-truncate">{{ notif.target }}</div>
+                                    </a>
+                                </li>
+                                {% endfor %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-center small text-primary" href="{{ url_for('audit_logs') }}">View all activity</a></li>
+                            {% else %}
+                                <li><span class="dropdown-item text-muted small">No recent activity</span></li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                    {% endif %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i> {{ current_user.first_name }} {{ current_user.last_name }}

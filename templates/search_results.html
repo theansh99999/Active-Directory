@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-search"></i> Search Results for "{{ query }}"</h1>
+</div>
+
+<div class="row">
+    <!-- Users -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-transparent border-0 pt-4 pb-0">
+                <h5 class="mb-0"><i class="bi bi-people text-primary me-2"></i>Users</h5>
+            </div>
+            <div class="card-body">
+                {% if results.users %}
+                    <ul class="list-group list-group-flush">
+                        {% for user in results.users %}
+                            <li class="list-group-item bg-transparent px-0 border-secondary">
+                                <a href="{{ url_for('edit_user', id=user.id) }}" class="text-decoration-none text-body d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+                                        <div class="small text-muted">{{ user.username }}</div>
+                                    </div>
+                                    <i class="bi bi-chevron-right text-muted"></i>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <a href="{{ url_for('users', search=query) }}" class="btn btn-sm btn-outline-primary mt-3 w-100">View all matching users</a>
+                {% else %}
+                    <div class="text-center text-muted mt-3 py-4">
+                        <i class="bi bi-inbox fs-2"></i>
+                        <p class="mb-0">No users found</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Groups -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-transparent border-0 pt-4 pb-0">
+                <h5 class="mb-0"><i class="bi bi-collection text-info me-2"></i>Groups</h5>
+            </div>
+            <div class="card-body">
+                {% if results.groups %}
+                    <ul class="list-group list-group-flush">
+                        {% for group in results.groups %}
+                            <li class="list-group-item bg-transparent px-0 border-secondary">
+                                <a href="{{ url_for('edit_group', id=group.id) }}" class="text-decoration-none text-body d-flex justify-content-between align-items-center">
+                                    <strong>{{ group.name }}</strong>
+                                    <i class="bi bi-chevron-right text-muted"></i>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <a href="{{ url_for('groups', search=query) }}" class="btn btn-sm btn-outline-info mt-3 w-100">View all matching groups</a>
+                {% else %}
+                    <div class="text-center text-muted mt-3 py-4">
+                        <i class="bi bi-inbox fs-2"></i>
+                        <p class="mb-0">No groups found</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Computers -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-transparent border-0 pt-4 pb-0">
+                <h5 class="mb-0"><i class="bi bi-pc-display text-warning me-2"></i>Computers</h5>
+            </div>
+            <div class="card-body">
+                {% if results.computers %}
+                    <ul class="list-group list-group-flush">
+                        {% for comp in results.computers %}
+                            <li class="list-group-item bg-transparent px-0 border-secondary">
+                                <a href="{{ url_for('edit_computer', id=comp.id) }}" class="text-decoration-none text-body d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ comp.name }}</strong>
+                                        <div class="small text-muted">{{ comp.status }}</div>
+                                    </div>
+                                    <i class="bi bi-chevron-right text-muted"></i>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <a href="{{ url_for('computers', search=query) }}" class="btn btn-sm btn-outline-warning mt-3 w-100">View all matching computers</a>
+                {% else %}
+                    <div class="text-center text-muted mt-3 py-4">
+                        <i class="bi bi-inbox fs-2"></i>
+                        <p class="mb-0">No computers found</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- OUs -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-transparent border-0 pt-4 pb-0">
+                <h5 class="mb-0"><i class="bi bi-diagram-3 text-success me-2"></i>Organizational Units</h5>
+            </div>
+            <div class="card-body">
+                {% if results.ous %}
+                    <ul class="list-group list-group-flush">
+                        {% for ou in results.ous %}
+                            <li class="list-group-item bg-transparent px-0 border-secondary">
+                                <a href="{{ url_for('ou_bp.manage_ous', id=ou.id) }}" class="text-decoration-none text-body d-flex justify-content-between align-items-center">
+                                    <strong>{{ ou.name }}</strong>
+                                    <i class="bi bi-chevron-right text-muted"></i>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <a href="{{ url_for('ou_bp.manage_ous') }}" class="btn btn-sm btn-outline-success mt-3 w-100">View organizational units</a>
+                {% else %}
+                    <div class="text-center text-muted mt-3 py-4">
+                        <i class="bi bi-inbox fs-2"></i>
+                        <p class="mb-0">No OUs found</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
