@@ -2,24 +2,24 @@
 
 {% block content %}
 <style>
-    /* Management Console Styles */
+    /* Modern Enterprise Management Console Styles */
     .mmc-container {
         display: flex;
-        height: calc(100vh - 140px);
+        height: calc(100vh - 120px);
         margin-top: 1rem;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: 8px;
         overflow: hidden;
-        background-color: var(--bs-body-bg);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background-color: #0f172a; /* Slate 900 */
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
     }
     
     .mmc-left {
-        width: 320px;
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        width: 400px;
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
         display: flex;
         flex-direction: column;
-        background-color: rgba(255, 255, 255, 0.02);
+        background-color: #1e293b; /* Slate 800 */
     }
     
     .mmc-right {
@@ -27,132 +27,305 @@
         display: flex;
         flex-direction: column;
         overflow-y: auto;
-        background-color: var(--bs-body-bg);
+        background-color: #0f172a;
     }
     
     /* Tree Styles */
     .tree-toolbar {
-        padding: 0.75rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        background-color: #0f172a;
     }
     
     .tree-scroll-area {
         flex: 1;
         overflow-y: auto;
-        padding: 0.5rem;
+        padding: 1rem 1rem;
+    }
+    
+    /* Custom Scrollbar for tree */
+    .tree-scroll-area::-webkit-scrollbar, .mmc-right::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    .tree-scroll-area::-webkit-scrollbar-track, .mmc-right::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .tree-scroll-area::-webkit-scrollbar-thumb, .mmc-right::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+    }
+    .tree-scroll-area::-webkit-scrollbar-thumb:hover, .mmc-right::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
     }
     
     .tree-node-item {
-        padding: 0.35rem 0.5rem;
+        padding: 0.5rem 0.75rem;
+        margin-bottom: 2px;
         cursor: pointer;
-        border-radius: 4px;
+        border-radius: 6px;
         display: flex;
         align-items: center;
         white-space: nowrap;
-        transition: background-color 0.2s;
+        transition: background-color 0.15s, color 0.15s;
+        color: #cbd5e1;
+        font-size: 0.95rem;
+        position: relative;
     }
     
     .tree-node-item:hover {
         background-color: rgba(255, 255, 255, 0.05);
+        color: #f8fafc;
     }
     
     .tree-node-item.selected {
-        background-color: rgba(13, 110, 253, 0.15);
-        border-left: 3px solid #0d6efd;
+        background-color: rgba(59, 130, 246, 0.15); /* Blue 500 w/ opacity */
+        color: #60a5fa; /* Blue 400 */
         font-weight: 500;
     }
     
-    .tree-expander {
-        width: 20px;
-        text-align: center;
-        color: #adb5bd;
-        cursor: pointer;
+    .tree-node-item.selected i.bi-folder-fill, .tree-node-item.selected i.bi-folder2-open {
+        color: #3b82f6 !important;
     }
     
     .tree-children {
-        display: none;
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 0.3s ease-in-out;
+        position: relative;
     }
     .tree-children.show {
-        display: block;
+        grid-template-rows: 1fr;
+    }
+    .tree-children > div {
+        overflow: hidden;
+    }
+    
+    /* Connector Lines */
+    .tree-children::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 20px; /* Aligned with expander */
+        width: 1px;
+        background-color: rgba(255, 255, 255, 0.1);
+        z-index: 0;
+    }
+    
+    .tree-expander {
+        width: 24px;
+        height: 24px;
+        text-align: center;
+        color: #64748b;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.2s, background-color 0.2s;
+        border-radius: 4px;
+        position: relative;
+        z-index: 1;
+        background-color: transparent;
+    }
+    .tree-expander:hover {
+        color: #94a3b8;
+        background-color: rgba(255, 255, 255, 0.05);
     }
     
     /* Right Panel Styles */
     .details-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        background-color: rgba(255, 255, 255, 0.02);
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        background-color: #1e293b;
     }
     
     .breadcrumb-custom {
         font-size: 0.85rem;
-        color: #adb5bd;
-        margin-bottom: 0.5rem;
+        color: #94a3b8;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
     }
     
+    .breadcrumb-custom span.separator {
+        margin: 0 0.5rem;
+        color: #475569;
+    }
+    
+    /* Stat Cards */
     .stat-card {
-        background-color: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 6px;
-        padding: 1rem;
-        text-align: center;
-        transition: transform 0.2s;
+        background-color: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        height: 100%;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
     
     .stat-card:hover {
-        transform: translateY(-2px);
-        background-color: rgba(255, 255, 255, 0.05);
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+        border-color: rgba(255, 255, 255, 0.15);
     }
     
-    .stat-card h3 {
-        margin: 0;
+    .stat-card .icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         font-size: 1.5rem;
+        margin-bottom: 0;
+    }
+    
+    .stat-card.users .icon-wrapper { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); }
+    .stat-card.groups .icon-wrapper { background-color: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+    .stat-card.computers .icon-wrapper { background-color: rgba(14, 165, 233, 0.1); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.2); }
+    .stat-card.ous .icon-wrapper { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
+    
+    .stat-card h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: #f8fafc;
+        letter-spacing: -0.025em;
     }
     
     .stat-card span {
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        color: #adb5bd;
+        font-size: 0.9rem;
+        color: #94a3b8;
+        font-weight: 500;
     }
     
+    /* Tabs & Content */
     .tab-content-area {
-        padding: 1.5rem;
+        padding: 2rem;
         flex: 1;
+        background-color: #0f172a;
     }
     
+    .nav-tabs {
+        border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+        gap: 0.5rem;
+    }
+    
+    .nav-tabs .nav-link {
+        color: #94a3b8;
+        border: none;
+        border-bottom: 2px solid transparent;
+        padding: 0.75rem 1.25rem;
+        font-weight: 500;
+        margin-bottom: -2px;
+        transition: color 0.2s, border-color 0.2s;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        border-color: transparent;
+        color: #e2e8f0;
+    }
+    
+    .nav-tabs .nav-link.active {
+        background-color: transparent;
+        color: #3b82f6;
+        border-color: #3b82f6;
+    }
+    
+    /* Tables */
+    .table-modern {
+        --bs-table-bg: transparent;
+        --bs-table-color: #cbd5e1;
+        --bs-table-border-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    .table-modern thead th {
+        background-color: #1e293b;
+        color: #94a3b8;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 1rem 1.5rem;
+    }
+    
+    .table-modern tbody td {
+        padding: 1rem 1.5rem;
+        vertical-align: middle;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: #e2e8f0;
+    }
+    
+    .table-modern tbody tr {
+        transition: background-color 0.2s;
+    }
+    
+    .table-modern tbody tr:hover {
+        background-color: rgba(255, 255, 255, 0.03);
+    }
+    
+    .info-card {
+        background-color: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 1.5rem;
+        height: 100%;
+    }
+    
+    /* Empty States */
     .empty-state {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         height: 100%;
-        color: #adb5bd;
+        color: #64748b;
+        padding: 3rem;
+        text-align: center;
     }
     
     .empty-state i {
         font-size: 4rem;
         margin-bottom: 1rem;
-        color: rgba(255,255,255,0.1);
+        color: rgba(255, 255, 255, 0.05);
+    }
+    
+    .empty-state h5 {
+        color: #e2e8f0;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-state p {
+        max-width: 400px;
+        margin-bottom: 0;
     }
     
     /* Assign Modal Specific */
     .choice-card {
         border: 1px solid rgba(255,255,255,0.1);
         border-radius: 8px;
-        padding: 1.25rem;
+        padding: 1.5rem;
         text-align: center;
         cursor: pointer;
         transition: all 0.2s;
         background-color: rgba(255,255,255,0.02);
+        height: 100%;
     }
     
     .choice-card:hover {
-        background-color: rgba(13, 110, 253, 0.1);
-        border-color: rgba(13, 110, 253, 0.5);
+        background-color: rgba(59, 130, 246, 0.1);
+        border-color: rgba(59, 130, 246, 0.5);
     }
     
     .choice-card i {
-        font-size: 2rem;
-        margin-bottom: 0.5rem;
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
         color: var(--bs-primary);
     }
     
@@ -166,36 +339,31 @@
     }
 </style>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-2 border-bottom">
-    <h1 class="h2"><i class="bi bi-diagram-3 text-primary"></i> Active Directory Management Console</h1>
-    {% if current_user.is_admin() %}
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="{{ url_for('ou_bp.add_ou') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Create New OU
-        </a>
-    </div>
-    {% endif %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-2 border-bottom border-secondary">
+    <h1 class="h3 text-white fw-bold d-flex align-items-center">
+        <i class="bi bi-diagram-3 text-primary me-2"></i> Organizational Units
+    </h1>
 </div>
 
 <div class="mmc-container">
     <!-- Left Panel: Tree View -->
     <div class="mmc-left">
         <div class="tree-toolbar">
-            <div class="input-group input-group-sm mb-2">
-                <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search"></i></span>
-                <input type="text" class="form-control border-start-0" id="treeSearchInput" placeholder="Search OUs...">
+            <div class="input-group mb-3">
+                <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control bg-dark border-secondary text-light" id="treeSearchInput" placeholder="Search OUs...">
             </div>
             <div class="d-flex justify-content-between">
                 <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-secondary" onclick="expandAll()" title="Expand All"><i class="bi bi-arrows-expand"></i></button>
-                    <button class="btn btn-outline-secondary" onclick="collapseAll()" title="Collapse All"><i class="bi bi-arrows-collapse"></i></button>
+                    <button class="btn btn-outline-secondary d-flex align-items-center" onclick="expandAll()" title="Expand All"><i class="bi bi-chevron-bar-down me-1"></i> Expand All</button>
+                    <button class="btn btn-outline-secondary d-flex align-items-center" onclick="collapseAll()" title="Collapse All"><i class="bi bi-chevron-bar-up me-1"></i> Collapse All</button>
                 </div>
                 <button class="btn btn-outline-secondary btn-sm" onclick="loadTree()" title="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
             </div>
         </div>
         <div class="tree-scroll-area" id="treeContainer">
             <div class="text-center text-muted p-4" id="treeLoading">
-                <div class="spinner-border spinner-border-sm" role="status"></div> Loading Hierarchy...
+                <div class="spinner-border spinner-border-sm text-primary" role="status"></div><br><span class="mt-2 d-inline-block">Loading Hierarchy...</span>
             </div>
         </div>
     </div>
@@ -205,68 +373,83 @@
         <!-- Empty State (No Selection) -->
         <div id="noSelectionState" class="empty-state">
             <i class="bi bi-diagram-3"></i>
-            <h5>No Organizational Unit Selected</h5>
-            <p>Select an OU from the tree on the left to view its details and objects.</p>
+            <h5>Organizational Unit Details</h5>
+            <p>Select an Organizational Unit from the hierarchy on the left to view and manage its properties, users, groups, and computers.</p>
         </div>
         
         <!-- Details View (Hidden by default) -->
-        <div id="detailsView" style="display: none; height: 100%; display: flex; flex-direction: column;">
+        <div id="detailsView" style="display: none; height: 100%; flex-direction: column;">
             
             <div class="details-header">
-                <div class="d-flex justify-content-between align-items-start">
+                <div class="d-flex justify-content-between align-items-start mb-4">
                     <div>
-                        <div class="breadcrumb-custom" id="detailBreadcrumb">Root > Company > Department</div>
-                        <h3 class="mb-1">
-                            <i class="bi bi-folder-fill text-warning me-2"></i>
-                            <span id="detailName">OU Name</span>
+                        <div class="breadcrumb-custom" id="detailBreadcrumb">Root <span><i class="bi bi-chevron-right mx-1" style="font-size:0.7rem;"></i></span> Company <span><i class="bi bi-chevron-right mx-1" style="font-size:0.7rem;"></i></span> Department</div>
+                        <h3 class="mb-1 text-white fw-bold d-flex align-items-center">
+                            <div class="bg-warning bg-opacity-10 rounded p-2 me-3 d-flex align-items-center justify-content-center">
+                                <i class="bi bi-folder-fill text-warning fs-3"></i>
+                            </div>
+                            <span id="detailName" style="font-size: 1.75rem;">OU Name</span>
+                            <span class="badge bg-success bg-opacity-10 text-success ms-3 border border-success border-opacity-25 rounded-pill px-3 py-1 fw-medium shadow-sm" style="font-size: 0.75rem !important;">Enabled</span>
                         </h3>
-                        <p class="text-muted mb-0" id="detailDesc">Description</p>
                     </div>
                     {% if current_user.is_admin() %}
-                    <div class="btn-group">
-                        <a href="#" id="btnEditOU" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i> Edit / Move</a>
-                        <button class="btn btn-outline-danger btn-sm" onclick="promptDeleteOU()"><i class="bi bi-trash"></i> Delete</button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary d-flex align-items-center shadow-sm" onclick="window.location.href='/ous/add?parent_id=' + currentSelectedId">
+                            <i class="bi bi-plus-lg me-2"></i> Create Child OU
+                        </button>
+                        <a href="#" id="btnEditOU" class="btn btn-outline-secondary d-flex align-items-center bg-dark bg-opacity-50"><i class="bi bi-pencil me-2"></i> Rename / Move</a>
+                        <button class="btn btn-outline-danger d-flex align-items-center bg-dark bg-opacity-50" onclick="promptDeleteOU()"><i class="bi bi-trash me-2"></i> Delete</button>
                     </div>
                     {% endif %}
                 </div>
                 
-                <div class="row g-3 mt-3">
-                    <div class="col-md-3 col-6">
-                        <div class="stat-card">
-                            <h3 id="statUsers" class="text-primary">0</h3>
-                            <span>Users</span>
+                <div class="row g-4 mt-2">
+                    <div class="col-md-3">
+                        <div class="stat-card users">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span>Total Users</span>
+                                <div class="icon-wrapper"><i class="bi bi-people-fill"></i></div>
+                            </div>
+                            <h3 id="statUsers">0</h3>
                         </div>
                     </div>
-                    <div class="col-md-3 col-6">
-                        <div class="stat-card">
-                            <h3 id="statGroups" class="text-success">0</h3>
-                            <span>Groups</span>
+                    <div class="col-md-3">
+                        <div class="stat-card groups">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span>Total Groups</span>
+                                <div class="icon-wrapper"><i class="bi bi-collection-fill"></i></div>
+                            </div>
+                            <h3 id="statGroups">0</h3>
                         </div>
                     </div>
-                    <div class="col-md-3 col-6">
-                        <div class="stat-card">
-                            <h3 id="statComputers" class="text-info">0</h3>
-                            <span>Computers</span>
+                    <div class="col-md-3">
+                        <div class="stat-card computers">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span>Total Computers</span>
+                                <div class="icon-wrapper"><i class="bi bi-pc-display"></i></div>
+                            </div>
+                            <h3 id="statComputers">0</h3>
                         </div>
                     </div>
-                    <div class="col-md-3 col-6">
-                        <div class="stat-card">
-                            <h3 id="statOUs" class="text-warning">0</h3>
-                            <span>Child OUs</span>
+                    <div class="col-md-3">
+                        <div class="stat-card ous">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span>Child OUs</span>
+                                <div class="icon-wrapper"><i class="bi bi-diagram-3-fill"></i></div>
+                            </div>
+                            <h3 id="statOUs">0</h3>
                         </div>
                     </div>
-                </div>
-                
-                <div class="mt-3 small text-muted d-flex gap-4">
-                    <span><i class="bi bi-clock"></i> Created: <span id="detailCreated">-</span></span>
-                    <span><i class="bi bi-pencil-square"></i> Updated: <span id="detailUpdated">-</span></span>
                 </div>
             </div>
             
             <div class="tab-content-area">
-                <ul class="nav nav-tabs mb-3" id="ouTabs" role="tablist">
+                <ul class="nav nav-tabs mb-4" id="ouTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-users" type="button">Users</button>
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-overview" type="button">Overview</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-users" type="button">Users</button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-groups" type="button">Groups</button>
@@ -277,59 +460,156 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-ous" type="button">Child OUs</button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-audit" type="button">Audit History</button>
+                    </li>
                 </ul>
                 
                 <div class="tab-content">
+                    <!-- Overview Tab -->
+                    <div class="tab-pane fade show active" id="tab-overview">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="info-card">
+                                    <h6 class="text-white mb-4 d-flex align-items-center"><i class="bi bi-info-square me-2 text-primary"></i> Basic Information</h6>
+                                    <table class="table table-borderless table-sm text-light mb-0 align-middle">
+                                        <tbody>
+                                            <tr>
+                                                <td class="text-muted pb-3" style="width: 150px;"><i class="bi bi-tag me-2"></i> Name</td>
+                                                <td id="infoName" class="fw-medium text-white pb-3">IT Department</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-muted pb-3"><i class="bi bi-card-text me-2"></i> Description</td>
+                                                <td id="infoDesc" class="pb-3 text-white">Information Technology Department</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-muted pb-3"><i class="bi bi-diagram-3 me-2"></i> Full Path</td>
+                                                <td id="infoPath" class="text-primary font-monospace small pb-3">Parul University / IT Department</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-muted"><i class="bi bi-box me-2"></i> Object Type</td>
+                                                <td class="text-white">Organizational Unit</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-card">
+                                    <h6 class="text-white mb-4 d-flex align-items-center"><i class="bi bi-shield-check me-2 text-success"></i> Management Properties</h6>
+                                    <table class="table table-borderless table-sm text-light mb-0 align-middle">
+                                        <tbody>
+                                            <tr>
+                                                <td class="text-muted pb-3" style="width: 150px;"><i class="bi bi-calendar3 me-2"></i> Created On</td>
+                                                <td id="infoCreated" class="text-white pb-3">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-muted pb-3"><i class="bi bi-pencil-square me-2"></i> Last Updated</td>
+                                                <td id="infoUpdated" class="text-white pb-3">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-muted pb-3"><i class="bi bi-shield-lock me-2"></i> Protection</td>
+                                                <td class="text-white pb-3">Protected from accidental deletion</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-muted"><i class="bi bi-hdd-network me-2"></i> Linked GPOs</td>
+                                                <td class="text-muted fst-italic">Coming Soon</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Users Tab -->
-                    <div class="tab-pane fade show active" id="tab-users">
-                        <div class="d-flex justify-content-between mb-3">
-                            <input type="text" class="form-control form-control-sm w-50" id="searchUsers" placeholder="Search users in this OU...">
+                    <div class="tab-pane fade" id="tab-users">
+                        <div class="d-flex justify-content-between mb-3 align-items-center">
+                            <div class="input-group input-group-sm w-50">
+                                <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control bg-dark border-secondary text-light" id="searchUsers" placeholder="Search users in this OU...">
+                            </div>
                             {% if current_user.is_admin() %}
                             <button class="btn btn-sm btn-primary" onclick="promptAssign('user')">
-                                <i class="bi bi-person-plus"></i> Add User
+                                <i class="bi bi-person-plus me-1"></i> Add User
                             </button>
                             {% endif %}
                         </div>
-                        <div id="tableUsersContainer"></div>
+                        <div class="card border-0 bg-transparent">
+                            <div class="card-body p-0">
+                                <div id="tableUsersContainer"></div>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Groups Tab -->
                     <div class="tab-pane fade" id="tab-groups">
-                        <div class="d-flex justify-content-between mb-3">
-                            <input type="text" class="form-control form-control-sm w-50" id="searchGroups" placeholder="Search groups in this OU...">
+                        <div class="d-flex justify-content-between mb-3 align-items-center">
+                            <div class="input-group input-group-sm w-50">
+                                <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control bg-dark border-secondary text-light" id="searchGroups" placeholder="Search groups in this OU...">
+                            </div>
                             {% if current_user.is_admin() %}
                             <button class="btn btn-sm btn-success" onclick="promptAssign('group')">
-                                <i class="bi bi-people"></i> Add Group
+                                <i class="bi bi-collection me-1"></i> Add Group
                             </button>
                             {% endif %}
                         </div>
-                        <div id="tableGroupsContainer"></div>
+                        <div class="card border-0 bg-transparent">
+                            <div class="card-body p-0">
+                                <div id="tableGroupsContainer"></div>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Computers Tab -->
                     <div class="tab-pane fade" id="tab-computers">
-                        <div class="d-flex justify-content-between mb-3">
-                            <input type="text" class="form-control form-control-sm w-50" id="searchComputers" placeholder="Search computers in this OU...">
+                        <div class="d-flex justify-content-between mb-3 align-items-center">
+                            <div class="input-group input-group-sm w-50">
+                                <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control bg-dark border-secondary text-light" id="searchComputers" placeholder="Search computers in this OU...">
+                            </div>
                             {% if current_user.is_admin() %}
                             <button class="btn btn-sm btn-info text-white" onclick="promptAssign('computer')">
-                                <i class="bi bi-pc-display"></i> Add Computer
+                                <i class="bi bi-pc-display me-1"></i> Add Computer
                             </button>
                             {% endif %}
                         </div>
-                        <div id="tableComputersContainer"></div>
+                        <div class="card border-0 bg-transparent">
+                            <div class="card-body p-0">
+                                <div id="tableComputersContainer"></div>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- OUs Tab -->
                     <div class="tab-pane fade" id="tab-ous">
-                        <div class="d-flex justify-content-between mb-3">
-                            <input type="text" class="form-control form-control-sm w-50" id="searchOUs" placeholder="Search child OUs...">
+                        <div class="d-flex justify-content-between mb-3 align-items-center">
+                            <div class="input-group input-group-sm w-50">
+                                <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control bg-dark border-secondary text-light" id="searchOUs" placeholder="Search child OUs...">
+                            </div>
                             {% if current_user.is_admin() %}
                             <button class="btn btn-sm btn-warning" onclick="window.location.href='/ous/add?parent_id=' + currentSelectedId">
-                                <i class="bi bi-folder-plus"></i> Add Child OU
+                                <i class="bi bi-folder-plus me-1"></i> Add Child OU
                             </button>
                             {% endif %}
                         </div>
-                        <div id="tableOUsContainer"></div>
+                        <div class="card border-0 bg-transparent">
+                            <div class="card-body p-0">
+                                <div id="tableOUsContainer"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Audit History Tab -->
+                    <div class="tab-pane fade" id="tab-audit">
+                        <div class="empty-state py-5 my-4">
+                            <i class="bi bi-journal-text text-muted opacity-50 mb-3" style="font-size: 3rem;"></i>
+                            <h5 class="text-white">Audit History Coming Soon</h5>
+                            <p class="text-muted small">Detailed audit logs and change history for Organizational Units will be available in a future update. For now, please check the main Audit Logs page.</p>
+                            <a href="{{ url_for('audit_logs') }}" class="btn btn-outline-secondary mt-3">View Global Audit Logs</a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -341,29 +621,29 @@
 <!-- Assign Objects Modal -->
 <div class="modal fade" id="assignModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content bg-dark border-secondary text-light">
+            <div class="modal-header border-secondary">
                 <h5 class="modal-title" id="assignModalTitle">Add Object to OU</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
                 
                 <!-- View 1: Choice -->
                 <div id="assignChoiceView">
-                    <h5 class="text-center mb-4">How would you like to add the <span id="assignTypeName"></span>?</h5>
+                    <h5 class="text-center mb-4 text-white">How would you like to add the <span id="assignTypeName"></span>?</h5>
                     <div class="row g-4">
                         <div class="col-md-6">
                             <div class="choice-card" onclick="openCreateNew()">
-                                <i class="bi bi-plus-circle"></i>
-                                <h5>Create New</h5>
-                                <p class="text-muted small mb-0">Create a brand new object and assign it to this OU.</p>
+                                <i class="bi bi-plus-circle text-primary"></i>
+                                <h5 class="text-white mt-2">Create New</h5>
+                                <p class="text-muted small mb-0">Create a brand new object and automatically assign it to this OU.</p>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="choice-card" onclick="openAssignSearch()">
-                                <i class="bi bi-search"></i>
-                                <h5>Add Existing</h5>
-                                <p class="text-muted small mb-0">Search for an existing object to move it into this OU.</p>
+                                <i class="bi bi-search text-success"></i>
+                                <h5 class="text-white mt-2">Add Existing</h5>
+                                <p class="text-muted small mb-0">Search for an existing object in the directory and move it into this OU.</p>
                             </div>
                         </div>
                     </div>
@@ -372,31 +652,31 @@
                 <!-- View 2: Search -->
                 <div id="assignSearchView" style="display: none;">
                     <div class="d-flex justify-content-between mb-3 align-items-center">
-                        <button class="btn btn-sm btn-outline-secondary" onclick="backToChoice()"><i class="bi bi-arrow-left"></i> Back</button>
-                        <h6 class="mb-0">Select Existing <span id="assignTypeName2"></span>s</h6>
+                        <button class="btn btn-sm btn-outline-secondary d-flex align-items-center" onclick="backToChoice()"><i class="bi bi-arrow-left me-1"></i> Back</button>
+                        <h6 class="mb-0 text-white">Select Existing <span id="assignTypeName2"></span>s</h6>
                     </div>
                     
                     <div class="input-group mb-3">
-                        <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control" id="assignSearchInput" placeholder="Search by name, email, or IP...">
+                        <span class="input-group-text bg-transparent border-secondary text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control bg-transparent border-secondary text-light" id="assignSearchInput" placeholder="Search by name, email, or IP...">
                         <button class="btn btn-primary" type="button" onclick="performAssignSearch(document.getElementById('assignSearchInput').value)">Search</button>
                     </div>
                     
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)">
-                            <label class="form-check-label" for="selectAllCheckbox">Select All</label>
+                            <label class="form-check-label text-light" for="selectAllCheckbox">Select All</label>
                         </div>
                         <small class="text-muted" id="assignResultCount">0 results</small>
                     </div>
                     
-                    <div class="border rounded p-2" style="max-height: 300px; overflow-y: auto;" id="assignResultsContainer">
+                    <div class="border border-secondary rounded p-2 custom-scrollbar" style="max-height: 300px; overflow-y: auto;" id="assignResultsContainer">
                         <!-- Results injected here -->
                     </div>
                 </div>
                 
             </div>
-            <div class="modal-footer" id="assignFooter" style="display: none;">
+            <div class="modal-footer border-secondary" id="assignFooter" style="display: none;">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="btnConfirmAssign" onclick="confirmAssign()" disabled>
                     Move Selected to OU
@@ -409,22 +689,22 @@
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Confirm Deletion</h5>
+        <div class="modal-content bg-dark border-secondary text-light">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i> Confirm Deletion</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete the Organizational Unit <strong id="deleteOuName"></strong>?</p>
+            <div class="modal-body p-4">
+                <p class="mb-0">Are you sure you want to delete the Organizational Unit <strong id="deleteOuName" class="text-white"></strong>?</p>
                 
-                <div id="deleteBlockReason" class="alert alert-warning" style="display:none;">
-                    <strong><i class="bi bi-shield-lock"></i> Deletion Blocked</strong>
-                    <p class="mb-0 mt-1">This OU contains active objects. You must move or delete the following before this OU can be deleted:</p>
-                    <ul class="mb-0 mt-1" id="deleteBlockList"></ul>
+                <div id="deleteBlockReason" class="alert alert-warning border-warning bg-warning bg-opacity-10 text-warning mt-4 mb-0" style="display:none;">
+                    <strong><i class="bi bi-shield-lock-fill me-1"></i> Deletion Blocked</strong>
+                    <p class="mb-0 mt-2 small">This OU contains active objects. You must move or delete the following before this OU can be deleted:</p>
+                    <ul class="mb-0 mt-2 small ps-3" id="deleteBlockList"></ul>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                 <form id="deleteForm" method="POST" action="">
                     <button type="submit" class="btn btn-danger" id="btnConfirmDelete">Delete OU</button>
                 </form>
@@ -477,7 +757,7 @@
             <div class="toast align-items-center text-white bg-${isError ? 'danger' : 'success'} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
                 <div class="d-flex">
                     <div class="toast-body">
-                        <i class="bi ${isError ? 'bi-x-circle' : 'bi-check-circle'} me-2"></i>
+                        <i class="bi ${isError ? 'bi-x-circle-fill' : 'bi-check-circle-fill'} me-2"></i>
                         ${message}
                     </div>
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
@@ -492,7 +772,7 @@
     function loadTree() {
         document.getElementById('treeContainer').innerHTML = `
             <div class="text-center text-muted p-4">
-                <div class="spinner-border spinner-border-sm" role="status"></div> Loading...
+                <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div><br>Loading Hierarchy...
             </div>`;
             
         fetch('/api/ous/tree')
@@ -500,21 +780,21 @@
             .then(data => {
                 flatOUMap.clear();
                 document.getElementById('treeContainer').innerHTML = '';
-                buildFlatMap(data, "Root");
-                renderTree(data, document.getElementById('treeContainer'), 0, "Root");
+                buildFlatMap(data, "Directory Root");
+                renderTree(data, document.getElementById('treeContainer'), 0, "Directory Root");
                 
                 if (autoSelectId && flatOUMap.has(parseInt(autoSelectId))) {
                     const node = flatOUMap.get(parseInt(autoSelectId));
                     // Expand parents
                     expandToNode(document.querySelector(`.tree-node-item[data-id="${autoSelectId}"]`));
-                    selectOU(parseInt(autoSelectId), node.name, node.path);
+                    selectOU(parseInt(autoSelectId), node.name);
                 }
             });
     }
 
     function buildFlatMap(nodes, parentPath) {
         nodes.forEach(node => {
-            const currentPath = parentPath === "Root" ? node.name : `${parentPath} > ${node.name}`;
+            const currentPath = parentPath === "Directory Root" ? node.name : `${parentPath} <span><i class="bi bi-chevron-right mx-1" style="font-size:0.7rem;"></i></span> ${node.name}`;
             flatOUMap.set(node.id, { ...node, path: currentPath });
             if (node.children) buildFlatMap(node.children, currentPath);
         });
@@ -522,15 +802,15 @@
 
     function renderTree(nodes, container, level, parentPath) {
         nodes.forEach(node => {
-            const currentPath = parentPath === "Root" ? node.name : `${parentPath} > ${node.name}`;
+            const currentPath = parentPath === "Directory Root" ? node.name : `${parentPath} <span><i class="bi bi-chevron-right mx-1" style="font-size:0.7rem;"></i></span> ${node.name}`;
             const hasChildren = node.children && node.children.length > 0;
-            const paddingLeft = level * 20 + 5;
+            const paddingLeft = level === 0 ? 0 : 20;
 
             const nodeDiv = document.createElement('div');
             
-            let expander = `<span class="tree-expander" style="visibility: hidden"><i class="bi bi-dash"></i></span>`;
+            let expander = `<span class="tree-expander" style="visibility: hidden"><i class="bi bi-dot"></i></span>`;
             if (hasChildren) {
-                expander = `<span class="tree-expander" onclick="toggleTreeNode(this, event)"><i class="bi bi-plus-square"></i></span>`;
+                expander = `<span class="tree-expander" onclick="toggleTreeNode(this, event)"><i class="bi bi-chevron-right fs-6"></i></span>`;
             }
 
             const itemDiv = document.createElement('div');
@@ -538,16 +818,17 @@
             itemDiv.dataset.id = node.id;
             itemDiv.dataset.name = node.name.toLowerCase();
             
-            // Re-apply selected class if it's the currently selected OU (useful for refresh)
             if (currentSelectedId === node.id) {
                 itemDiv.classList.add('selected');
             }
             
+            const folderIcon = currentSelectedId === node.id ? 'bi-folder2-open' : 'bi-folder-fill';
+            
             itemDiv.innerHTML = `
-                <div style="padding-left: ${paddingLeft}px; display: flex; align-items: center; width:100%">
+                <div style="display: flex; align-items: center; width:100%">
                     ${expander}
-                    <div style="flex-grow: 1;" onclick="selectOU(${node.id}, '${node.name.replace(/'/g, "\\'")}', '${currentPath.replace(/'/g, "\\'")}')">
-                        <i class="bi bi-folder text-warning me-2"></i> ${node.name}
+                    <div style="flex-grow: 1; display:flex; align-items:center;" onclick="selectOU(${node.id}, '${node.name.replace(/'/g, "\\'")}')">
+                        <i class="bi ${folderIcon} text-warning me-2 fs-5"></i> <span class="fw-medium">${node.name}</span>
                     </div>
                 </div>
             `;
@@ -556,8 +837,10 @@
             if (hasChildren) {
                 const childrenContainer = document.createElement('div');
                 childrenContainer.className = 'tree-children';
-                // If expanding all or this was previously expanded, we could restore state, but let's keep it simple for now
-                renderTree(node.children, childrenContainer, level + 1, currentPath);
+                const childrenInner = document.createElement('div');
+                childrenInner.style.paddingLeft = `${paddingLeft}px`;
+                renderTree(node.children, childrenInner, level + 1, currentPath);
+                childrenContainer.appendChild(childrenInner);
                 nodeDiv.appendChild(childrenContainer);
             }
 
@@ -568,38 +851,50 @@
     window.toggleTreeNode = function(el, event) {
         event.stopPropagation();
         const children = el.closest('.tree-node-item').nextElementSibling;
+        const icon = el.querySelector('i');
+        const folderIcon = el.nextElementSibling.querySelector('i.bi-folder-fill, i.bi-folder2-open');
+        
         if (children && children.classList.contains('tree-children')) {
             children.classList.toggle('show');
-            el.innerHTML = children.classList.contains('show') ? '<i class="bi bi-dash-square"></i>' : '<i class="bi bi-plus-square"></i>';
+            if(children.classList.contains('show')) {
+                icon.className = 'bi bi-chevron-down fs-6';
+                if(folderIcon && !el.closest('.tree-node-item').classList.contains('selected')) folderIcon.className = 'bi bi-folder2-open text-warning me-2 fs-5';
+            } else {
+                icon.className = 'bi bi-chevron-right fs-6';
+                if(folderIcon && !el.closest('.tree-node-item').classList.contains('selected')) folderIcon.className = 'bi bi-folder-fill text-warning me-2 fs-5';
+            }
         }
     }
 
     window.expandAll = function() {
         document.querySelectorAll('.tree-children').forEach(el => el.classList.add('show'));
-        document.querySelectorAll('.tree-expander i.bi-plus-square').forEach(el => {
-            el.classList.remove('bi-plus-square');
-            el.classList.add('bi-dash-square');
+        document.querySelectorAll('.tree-expander i.bi-chevron-right').forEach(el => {
+            el.className = 'bi bi-chevron-down fs-6';
+            const folderIcon = el.closest('.tree-node-item').querySelector('.bi-folder-fill');
+            if(folderIcon) folderIcon.className = 'bi bi-folder2-open text-warning me-2 fs-5';
         });
     }
 
     window.collapseAll = function() {
         document.querySelectorAll('.tree-children').forEach(el => el.classList.remove('show'));
-        document.querySelectorAll('.tree-expander i.bi-dash-square').forEach(el => {
-            el.classList.remove('bi-dash-square');
-            el.classList.add('bi-plus-square');
+        document.querySelectorAll('.tree-expander i.bi-chevron-down').forEach(el => {
+            el.className = 'bi bi-chevron-right fs-6';
+            const folderIcon = el.closest('.tree-node-item').querySelector('.bi-folder2-open');
+            if(folderIcon && !el.closest('.tree-node-item').classList.contains('selected')) {
+                folderIcon.className = 'bi bi-folder-fill text-warning me-2 fs-5';
+            }
         });
     }
 
     function expandToNode(el) {
         let current = el;
-        while(current && current.parentElement && current.parentElement.classList.contains('tree-children')) {
-            current.parentElement.classList.add('show');
-            const toggleIcon = current.parentElement.previousElementSibling.querySelector('.tree-expander i');
+        while(current && current.parentElement && current.parentElement.parentElement && current.parentElement.parentElement.classList.contains('tree-children')) {
+            current.parentElement.parentElement.classList.add('show');
+            const toggleIcon = current.parentElement.parentElement.previousElementSibling.querySelector('.tree-expander i');
             if(toggleIcon) {
-                toggleIcon.classList.remove('bi-plus-square');
-                toggleIcon.classList.add('bi-dash-square');
+                toggleIcon.className = 'bi bi-chevron-down fs-6';
             }
-            current = current.parentElement.previousElementSibling;
+            current = current.parentElement.parentElement.previousElementSibling;
         }
     }
 
@@ -628,9 +923,18 @@
         currentSelectedId = id;
         
         // Highlight logic
-        document.querySelectorAll('.tree-node-item').forEach(el => el.classList.remove('selected'));
+        document.querySelectorAll('.tree-node-item').forEach(el => {
+            el.classList.remove('selected');
+            const icon = el.querySelector('i.bi-folder2-open');
+            if(icon && !el.nextElementSibling?.classList.contains('show')) icon.className = 'bi bi-folder-fill text-warning me-2 fs-5';
+        });
+        
         const selectedEl = document.querySelector(`.tree-node-item[data-id="${id}"]`);
-        if (selectedEl) selectedEl.classList.add('selected');
+        if (selectedEl) {
+            selectedEl.classList.add('selected');
+            const icon = selectedEl.querySelector('i.bi-folder-fill, i.bi-folder2-open');
+            if(icon) icon.className = 'bi bi-folder2-open text-warning me-2 fs-5';
+        }
         
         // Show details panel
         document.getElementById('noSelectionState').style.display = 'none';
@@ -640,11 +944,18 @@
         // Load details from map if called from tree. If map isn't populated (e.g. refresh), fallback
         const node = flatOUMap.get(id);
         if (node) {
-            document.getElementById('detailBreadcrumb').textContent = path || node.path;
+            document.getElementById('detailBreadcrumb').innerHTML = path || node.path;
             document.getElementById('detailName').textContent = name || node.name;
-            document.getElementById('detailDesc').textContent = node.description || 'No description provided.';
-            document.getElementById('detailCreated').textContent = node.created_at ? new Date(node.created_at).toLocaleDateString() : '-';
-            document.getElementById('detailUpdated').textContent = node.updated_at ? new Date(node.updated_at).toLocaleDateString() : '-';
+            // document.getElementById('detailDesc').textContent = node.description || 'No description provided.';
+            
+            document.getElementById('infoName').textContent = name || node.name;
+            document.getElementById('infoDesc').textContent = node.description || '-';
+            document.getElementById('infoPath').innerHTML = path || node.path;
+            
+            const created = node.created_at ? new Date(node.created_at).toLocaleString() : '-';
+            const updated = node.updated_at ? new Date(node.updated_at).toLocaleString() : '-';
+            document.getElementById('infoCreated').textContent = created;
+            document.getElementById('infoUpdated').textContent = updated;
         }
         
         if (document.getElementById('btnEditOU')) {
@@ -665,48 +976,38 @@
                 
                 // Action button generators
                 const userActions = (id) => `
-                    <div class="btn-group btn-group-sm">
-                        <a href="/users/edit/${id}" class="btn btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
-                        <button class="btn btn-outline-warning" onclick="removeFromOU('user', ${id})" title="Remove from OU"><i class="bi bi-box-arrow-right"></i></button>
-                        <form method="POST" action="/users/delete/${id}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this user?');">
-                            <button type="submit" class="btn btn-outline-danger" style="border-top-left-radius:0; border-bottom-left-radius:0;" title="Delete"><i class="bi bi-trash"></i></button>
-                        </form>
+                    <div class="d-flex justify-content-end gap-1">
+                        <a href="/users/edit/${id}" class="btn btn-sm btn-link text-primary p-0" title="Edit"><i class="bi bi-eye"></i></a>
+                        <button class="btn btn-sm btn-link text-warning p-0 ms-2" onclick="removeFromOU('user', ${id})" title="Remove from OU"><i class="bi bi-box-arrow-right"></i></button>
                     </div>`;
                     
                 const groupActions = (id) => `
-                    <div class="btn-group btn-group-sm">
-                        <a href="/groups/edit/${id}" class="btn btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
-                        <button class="btn btn-outline-warning" onclick="removeFromOU('group', ${id})" title="Remove from OU"><i class="bi bi-box-arrow-right"></i></button>
-                        <form method="POST" action="/groups/delete/${id}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this group?');">
-                            <button type="submit" class="btn btn-outline-danger" style="border-top-left-radius:0; border-bottom-left-radius:0;" title="Delete"><i class="bi bi-trash"></i></button>
-                        </form>
+                    <div class="d-flex justify-content-end gap-1">
+                        <a href="/groups/edit/${id}" class="btn btn-sm btn-link text-primary p-0" title="Edit"><i class="bi bi-eye"></i></a>
+                        <button class="btn btn-sm btn-link text-warning p-0 ms-2" onclick="removeFromOU('group', ${id})" title="Remove from OU"><i class="bi bi-box-arrow-right"></i></button>
                     </div>`;
                     
                 const compActions = (id, status) => `
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-success" onclick="computerAction(${id}, 'ON')" title="Turn ON" ${status === 'ON' ? 'disabled' : ''}><i class="bi bi-power"></i></button>
-                        <button class="btn btn-outline-secondary" onclick="computerAction(${id}, 'OFF')" title="Turn OFF" ${status === 'OFF' ? 'disabled' : ''}><i class="bi bi-stop-circle"></i></button>
-                        <button class="btn btn-outline-warning" onclick="computerRestart(${id})" title="Restart"><i class="bi bi-arrow-clockwise"></i></button>
-                        <button class="btn btn-outline-info" onclick="removeFromOU('computer', ${id})" title="Remove from OU"><i class="bi bi-box-arrow-right"></i></button>
-                        <form method="POST" action="/computers/delete/${id}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this computer?');">
-                            <button type="submit" class="btn btn-outline-danger" style="border-top-left-radius:0; border-bottom-left-radius:0;" title="Delete"><i class="bi bi-trash"></i></button>
-                        </form>
+                    <div class="d-flex justify-content-end gap-1">
+                        <a href="/computers/edit/${id}" class="btn btn-sm btn-link text-primary p-0" title="Edit"><i class="bi bi-eye"></i></a>
+                        <button class="btn btn-sm btn-link text-warning p-0 ms-2" onclick="removeFromOU('computer', ${id})" title="Remove from OU"><i class="bi bi-box-arrow-right"></i></button>
                     </div>`;
                     
                 const ouActions = (id) => `
-                    <div class="btn-group btn-group-sm">
-                        <a href="/ous/edit/${id}" class="btn btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
+                    <div class="d-flex justify-content-end gap-1">
+                        <a href="/ous/edit/${id}" class="btn btn-sm btn-link text-primary p-0" title="Edit"><i class="bi bi-eye"></i></a>
                     </div>`;
 
                 // Render Tables
-                renderTable('tableUsersContainer', ['Username', 'Email', 'Actions'], data.users.map(u => [u.username, u.email, userActions(u.id)]), 'No users found in this OU.');
-                renderTable('tableGroupsContainer', ['Name', 'Actions'], data.groups.map(g => [g.name, groupActions(g.id)]), 'No groups found in this OU.');
-                renderTable('tableComputersContainer', ['Name', 'Status', 'Actions'], data.computers.map(c => [
+                renderTable('tableUsersContainer', ['Username', 'Email', '<span class="float-end">Actions</span>'], data.users.map(u => [u.username, u.email, userActions(u.id)]), 'No users found in this OU.');
+                renderTable('tableGroupsContainer', ['Name', '<span class="float-end">Actions</span>'], data.groups.map(g => [g.name, groupActions(g.id)]), 'No groups found in this OU.');
+                renderTable('tableComputersContainer', ['Name', 'Status', '<span class="float-end">Actions</span>'], data.computers.map(c => [
                     c.name, 
-                    `<span id="comp-badge-${c.id}" class="badge bg-${c.status === 'ON' ? 'success' : (c.status === 'OFF' ? 'danger' : 'warning')}">${c.status}</span>`,
+                    `<span id="comp-badge-${c.id}" class="badge bg-${c.status === 'ON' ? 'success' : (c.status === 'OFF' ? 'danger' : 'warning')} bg-opacity-25 text-${c.status === 'ON' ? 'success' : (c.status === 'OFF' ? 'danger' : 'warning')} border border-${c.status === 'ON' ? 'success' : (c.status === 'OFF' ? 'danger' : 'warning')}">${c.status}</span>`,
                     compActions(c.id, c.status)
                 ]), 'No computers found in this OU.');
-                renderTable('tableOUsContainer', ['Name', 'Actions'], data.children.map(c => [c.name, ouActions(c.id)]), 'No child OUs found.');
+                
+                renderOUCards('tableOUsContainer', data.children, 'No child OUs found in this organizational unit.');
                 
                 // Trigger search reset
                 document.getElementById('searchUsers').value = '';
@@ -721,16 +1022,16 @@
         const container = document.getElementById(containerId);
         if (rows.length === 0) {
             container.innerHTML = `
-                <div class="empty-state" style="height: 200px">
-                    <i class="bi bi-inbox"></i>
-                    <p>${emptyMsg}</p>
+                <div class="empty-state py-5">
+                    <i class="bi bi-inbox text-muted opacity-50" style="font-size:3rem"></i>
+                    <p class="text-muted mt-3 mb-0">${emptyMsg}</p>
                 </div>`;
             return;
         }
         
-        let html = '<div class="table-responsive"><table class="table table-hover"><thead><tr>';
+        let html = '<div class="table-responsive rounded border border-secondary border-opacity-50"><table class="table table-modern align-middle mb-0"><thead><tr>';
         headers.forEach(h => html += `<th>${h}</th>`);
-        html += '</tr></thead><tbody>';
+        html += '</tr></thead><tbody class="border-top-0">';
         
         rows.forEach(r => {
             html += '<tr class="searchable-row">';
@@ -739,6 +1040,45 @@
         });
         
         html += '</tbody></table></div>';
+        container.innerHTML = html;
+    }
+    
+    function renderOUCards(containerId, ous, emptyMsg) {
+        const container = document.getElementById(containerId);
+        if (ous.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state py-5">
+                    <i class="bi bi-folder-x text-muted opacity-50" style="font-size:3rem"></i>
+                    <p class="text-muted mt-3 mb-0">${emptyMsg}</p>
+                </div>`;
+            return;
+        }
+        
+        let html = '<div class="row g-3">';
+        ous.forEach(ou => {
+            html += `
+            <div class="col-md-6 col-lg-4 searchable-row" data-name="${ou.name.toLowerCase()}">
+                <div class="card border border-secondary border-opacity-50 bg-dark h-100 ou-card" style="transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.5)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'" onclick="const e = document.querySelector('.tree-node-item[data-id=\\'${ou.id}\\']'); if(e) { expandToNode(e); selectOU(${ou.id}, '${ou.name.replace(/'/g, "\\'")}') }">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-warning bg-opacity-10 rounded p-2 me-3">
+                                    <i class="bi bi-folder-fill text-warning fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-white fw-bold">${ou.name}</h6>
+                                    <small class="text-muted">Organizational Unit</small>
+                                </div>
+                            </div>
+                            <div onclick="event.stopPropagation()">
+                                ${ouActions(ou.id)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        });
+        html += '</div>';
         container.innerHTML = html;
     }
     
@@ -798,132 +1138,115 @@
     }
     
     window.performAssignSearch = function(query, page = 1) {
-        const container = document.getElementById('assignResultsContainer');
-        container.innerHTML = `
-            <div class="text-center p-3 text-muted">
-                <div class="spinner-border spinner-border-sm" role="status"></div> Searching...
-            </div>`;
-            
         fetch(`/api/ous/${currentSelectedId}/search-unassigned?type=${assignType}&q=${encodeURIComponent(query)}&page=${page}`)
             .then(res => res.json())
             .then(data => {
+                const container = document.getElementById('assignResultsContainer');
                 document.getElementById('assignResultCount').textContent = `${data.total} results`;
+                
                 if (data.items.length === 0) {
-                    container.innerHTML = `
-                        <div class="text-center p-4 text-muted">
-                            <i class="bi bi-inbox fs-2"></i>
-                            <p class="mb-0 mt-2">No available ${assignType}s found.</p>
-                        </div>`;
+                    container.innerHTML = '<div class="text-center text-muted p-4"><i class="bi bi-search fs-2 d-block mb-2"></i> No objects found.</div>';
+                    document.getElementById('btnConfirmAssign').disabled = true;
                     return;
                 }
                 
                 let html = '';
                 data.items.forEach(item => {
-                    const statusBadge = item.status ? `<span class="badge bg-secondary ms-2">${item.status}</span>` : '';
+                    const iconMap = {'user': 'bi-person', 'group': 'bi-people', 'computer': 'bi-pc-display'};
                     html += `
                         <div class="search-result-item d-flex align-items-center">
                             <div class="form-check me-3">
-                                <input class="form-check-input assign-item-cb" type="checkbox" value="${item.id}" onchange="checkAssignValidity()">
+                                <input class="form-check-input item-checkbox" type="checkbox" value="${item.id}" onchange="checkAssignSelection()">
                             </div>
                             <div class="flex-grow-1">
-                                <h6 class="mb-0">${item.name} ${statusBadge}</h6>
-                                <small class="text-muted">${item.type_desc}</small>
-                            </div>
-                            <div class="text-end">
-                                <small class="text-muted d-block">Current OU</small>
-                                <span class="badge bg-dark">${item.current_ou}</span>
+                                <div class="d-flex align-items-center text-light">
+                                    <i class="bi ${iconMap[assignType]} text-muted me-2"></i>
+                                    <strong>${item.name}</strong>
+                                </div>
+                                <div class="small text-muted">${item.type_desc || ''} &bull; Current OU: ${item.current_ou}</div>
                             </div>
                         </div>
                     `;
                 });
                 
-                // Add pagination controls if more than 1 page
+                // Pagination controls
                 if (data.pages > 1) {
-                    html += `<div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                    html += `<div class="d-flex justify-content-between mt-2 pt-2 border-top border-secondary">
                         <button class="btn btn-sm btn-outline-secondary" onclick="performAssignSearch('${query}', ${data.page - 1})" ${!data.has_prev ? 'disabled' : ''}>Previous</button>
-                        <span class="text-muted small">Page ${data.page} of ${data.pages}</span>
+                        <span class="small text-muted align-self-center">Page ${data.page} of ${data.pages}</span>
                         <button class="btn btn-sm btn-outline-secondary" onclick="performAssignSearch('${query}', ${data.page + 1})" ${!data.has_next ? 'disabled' : ''}>Next</button>
                     </div>`;
                 }
                 
                 container.innerHTML = html;
-                checkAssignValidity();
-            })
-            .catch(err => {
-                container.innerHTML = `<div class="text-danger p-3">Failed to load results.</div>`;
+                checkAssignSelection();
             });
     }
     
-    
     window.toggleSelectAll = function(cb) {
-        document.querySelectorAll('.assign-item-cb').forEach(el => el.checked = cb.checked);
-        checkAssignValidity();
+        document.querySelectorAll('.item-checkbox').forEach(box => {
+            box.checked = cb.checked;
+        });
+        checkAssignSelection();
     }
     
-    window.checkAssignValidity = function() {
-        const selected = document.querySelectorAll('.assign-item-cb:checked');
-        document.getElementById('btnConfirmAssign').disabled = selected.length === 0;
-        
-        // Update master checkbox state
-        const total = document.querySelectorAll('.assign-item-cb').length;
-        const selectAllCb = document.getElementById('selectAllCheckbox');
-        if (total > 0 && selected.length === total) {
-            selectAllCb.checked = true;
-            selectAllCb.indeterminate = false;
-        } else if (selected.length > 0) {
-            selectAllCb.checked = false;
-            selectAllCb.indeterminate = true;
-        } else {
-            selectAllCb.checked = false;
-            selectAllCb.indeterminate = false;
-        }
+    window.checkAssignSelection = function() {
+        const checked = document.querySelectorAll('.item-checkbox:checked').length;
+        document.getElementById('btnConfirmAssign').disabled = checked === 0;
     }
     
     window.confirmAssign = function() {
-        const selectedIds = Array.from(document.querySelectorAll('.assign-item-cb:checked')).map(el => parseInt(el.value));
-        if (selectedIds.length === 0) return;
+        const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+        const ids = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
         
-        const node = flatOUMap.get(currentSelectedId);
+        if (ids.length === 0) return;
         
-        if (!confirm(`Are you sure you want to move ${selectedIds.length} object(s) into '${node.name}'?`)) {
-            return;
-        }
-        
-        const btn = document.getElementById('btnConfirmAssign');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Moving...';
+        document.getElementById('btnConfirmAssign').disabled = true;
+        document.getElementById('btnConfirmAssign').innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Moving...';
         
         fetch(`/api/ous/${currentSelectedId}/assign-objects`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: assignType, ids: selectedIds })
+            body: JSON.stringify({ type: assignType, ids: ids })
         })
         .then(res => res.json())
         .then(data => {
-            btn.innerHTML = 'Move Selected to OU';
             if (data.success) {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('assignModal'));
-                modal.hide();
-                showCustomToast(`Successfully moved ${data.count} object(s) to ${node.name}.`);
-                // Refresh the selected OU to show new objects
-                selectOU(currentSelectedId); 
+                bootstrap.Modal.getInstance(document.getElementById('assignModal')).hide();
+                showCustomToast(`Successfully moved ${ids.length} ${assignType}(s) to OU.`);
+                // Refresh current view
+                selectOU(currentSelectedId, null, null); 
             } else {
-                alert(data.error || 'Failed to assign objects');
-                btn.disabled = false;
+                showCustomToast(data.error || 'Failed to assign objects', true);
+                document.getElementById('btnConfirmAssign').disabled = false;
+                document.getElementById('btnConfirmAssign').textContent = 'Move Selected to OU';
             }
-        })
-        .catch(err => {
-            console.error(err);
-            btn.innerHTML = 'Move Selected to OU';
-            btn.disabled = false;
-            alert('A network error occurred.');
         });
     }
-
+    
+    window.removeFromOU = function(type, id) {
+        if (!confirm(`Are you sure you want to remove this ${type} from the OU? It will be moved to the Root level.`)) return;
+        
+        fetch(`/api/ous/${currentSelectedId}/remove-object`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: type, id: id })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showCustomToast(`Successfully removed ${type} from OU.`);
+                selectOU(currentSelectedId, null, null); 
+            } else {
+                showCustomToast(data.error || 'Failed to remove object', true);
+            }
+        });
+    }
+    
     window.promptDeleteOU = function() {
         const node = flatOUMap.get(currentSelectedId);
         document.getElementById('deleteOuName').textContent = node.name;
-        document.getElementById('deleteForm').action = `/ous/delete/${node.id}`;
+        document.getElementById('deleteForm').action = `/ous/delete/${currentSelectedId}`;
         
         const blockReason = document.getElementById('deleteBlockReason');
         const blockList = document.getElementById('deleteBlockList');
@@ -932,10 +1255,22 @@
         blockList.innerHTML = '';
         let blockers = 0;
         
-        if (currentObjects.users.length > 0) { blockList.innerHTML += `<li>${currentObjects.users.length} Users</li>`; blockers++; }
-        if (currentObjects.groups.length > 0) { blockList.innerHTML += `<li>${currentObjects.groups.length} Groups</li>`; blockers++; }
-        if (currentObjects.computers.length > 0) { blockList.innerHTML += `<li>${currentObjects.computers.length} Computers</li>`; blockers++; }
-        if (currentObjects.children.length > 0) { blockList.innerHTML += `<li>${currentObjects.children.length} Child OUs</li>`; blockers++; }
+        if (currentObjects.children.length > 0) {
+            blockList.innerHTML += `<li>${currentObjects.children.length} Child OUs</li>`;
+            blockers++;
+        }
+        if (currentObjects.users.length > 0) {
+            blockList.innerHTML += `<li>${currentObjects.users.length} Users</li>`;
+            blockers++;
+        }
+        if (currentObjects.groups.length > 0) {
+            blockList.innerHTML += `<li>${currentObjects.groups.length} Groups</li>`;
+            blockers++;
+        }
+        if (currentObjects.computers.length > 0) {
+            blockList.innerHTML += `<li>${currentObjects.computers.length} Computers</li>`;
+            blockers++;
+        }
         
         if (blockers > 0) {
             blockReason.style.display = 'block';
@@ -946,92 +1281,6 @@
         }
         
         new bootstrap.Modal(document.getElementById('deleteModal')).show();
-    }
-    
-    window.removeFromOU = function(type, objId) {
-        if (!confirm('Are you sure you want to remove this object from the current OU? It will be moved to the Root (No OU).')) {
-            return;
-        }
-        
-        fetch(`/api/ous/${currentSelectedId}/remove-object`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: type, obj_id: objId })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                showCustomToast('Object removed from OU successfully.');
-                selectOU(currentSelectedId); // Refresh the view
-            } else {
-                alert(data.error || 'Failed to remove object');
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert('A network error occurred.');
-        });
-    }
-    
-    window.computerAction = function(id, status) {
-        fetch(`/api/computers/${id}/status`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: status })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                const badge = document.getElementById(`comp-badge-${id}`);
-                if (badge) {
-                    badge.className = `badge bg-${status === 'ON' ? 'success' : (status === 'OFF' ? 'danger' : 'warning')}`;
-                    badge.textContent = status;
-                }
-                showCustomToast(`Computer turned ${status}`);
-                setTimeout(() => selectOU(currentSelectedId), 500); // refresh after delay to update buttons
-            }
-        });
-    }
-
-    window.computerRestart = function(id) {
-        showCustomToast('Restarting computer...');
-        
-        // 1. Set to OFF
-        fetch(`/api/computers/${id}/status`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'OFF' })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                const badge = document.getElementById(`comp-badge-${id}`);
-                if (badge) {
-                    badge.className = 'badge bg-danger';
-                    badge.textContent = 'OFF';
-                }
-                
-                // 2. Wait 2 seconds, then set to ON
-                setTimeout(() => {
-                    fetch(`/api/computers/${id}/status`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ status: 'ON' })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            if (badge) {
-                                badge.className = 'badge bg-success';
-                                badge.textContent = 'ON';
-                            }
-                            showCustomToast('Computer restarted successfully');
-                            setTimeout(() => selectOU(currentSelectedId), 500);
-                        }
-                    });
-                }, 2000);
-            }
-        });
     }
 </script>
 {% endblock %}

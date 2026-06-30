@@ -1,122 +1,485 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2"><i class="bi bi-journal-text"></i> Audit Logs</h1>
-</div>
+<style>
+    /* Layout */
+    .page-container {
+        display: flex;
+        height: calc(100vh - 56px); /* Adjust based on navbar height */
+        overflow: hidden;
+        margin: -1.5rem; /* Negate the default padding of the block content to go edge-to-edge */
+        background-color: #0f172a;
+    }
+    
+    .mmc-left {
+        display: none;
+    }
+    
+    .mmc-right {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        background-color: #0f172a;
+    }
+    
+    /* Scrollbar */
+    .mmc-right::-webkit-scrollbar { width: 8px; height: 8px; }
+    .mmc-right::-webkit-scrollbar-track { background: transparent; }
+    .mmc-right::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+    .mmc-right::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+    
+    /* Header Area */
+    .page-header {
+        padding: 2rem 2rem 1rem 2rem;
+        background-color: #0f172a;
+    }
+    
+    .page-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #f8fafc;
+        margin-bottom: 0.25rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .page-subtitle {
+        color: #94a3b8;
+        font-size: 0.9rem;
+    }
 
-<!-- Search Bar -->
-<div class="row mb-3">
-    <div class="col-md-6">
-        <form method="GET" class="d-flex">
-            <input type="text" name="search" class="form-control" placeholder="Search logs..." 
-                   value="{{ search }}" onchange="this.form.submit()">
-            <button type="submit" class="btn btn-outline-secondary ms-2">
-                <i class="bi bi-search"></i>
-            </button>
-        </form>
-    </div>
-</div>
+    /* Summary Sidebar */
+    .summary-header {
+        padding: 1.5rem 1.25rem 1rem 1.25rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #94a3b8;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
 
-<!-- Logs Table -->
-<div class="card">
-    <div class="card-body d-flex flex-column paginated-container">
-        {% if logs %}
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Timestamp</th>
-                        <th>User</th>
-                        <th>Action</th>
-                        <th>Target</th>
-                        <th>Details</th>
-                        <th>IP Address</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for log in logs %}
-                    <tr>
-                        <td>
-                            <small>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-secondary">{{ log.user.username }}</span>
-                        </td>
-                        <td>
-                            <span class="badge 
-                                {% if 'Login' in log.action %}bg-success
-                                {% elif 'Logout' in log.action %}bg-info
-                                {% elif 'Created' in log.action %}bg-primary
-                                {% elif 'Updated' in log.action %}bg-warning
-                                {% elif 'Deleted' in log.action %}bg-danger
-                                {% elif 'ON' in log.action or 'RESTART' in log.action %}bg-warning
-                                {% elif 'Failed' in log.action %}bg-danger
-                                {% else %}bg-secondary{% endif %}">
-                                {{ log.action }}
-                            </span>
-                        </td>
-                        <td>{{ log.target }}</td>
-                        <td>
-                            <small class="text-muted">{{ log.details }}</small>
-                        </td>
-                        <td>
-                            <small>{{ log.ip_address or '-' }}</small>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: #cbd5e1;
+        font-size: 0.9rem;
+    }
+
+    .summary-value {
+        font-weight: 700;
+        color: #3b82f6;
+        font-size: 1.1rem;
+    }
+    
+    /* Search Bar */
+    .search-container {
+        background-color: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        padding: 0 1rem;
+        width: 100%;
+        max-width: 400px;
+    }
+    
+    .search-container i {
+        color: #64748b;
+    }
+    
+    .search-container input {
+        background: transparent;
+        border: none;
+        color: #f8fafc;
+        box-shadow: none !important;
+        padding: 0.6rem 0.75rem;
+    }
+    
+    .search-container input::placeholder {
+        color: #64748b;
+    }
+
+    /* Actions */
+    .btn-action {
+        background-color: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #e2e8f0;
+        font-size: 0.85rem;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .btn-action:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: #f8fafc;
+    }
+    
+    /* Table */
+    .table-container {
+        padding: 0 2rem 2rem 2rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .table-modern {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .table-modern thead th {
+        position: sticky;
+        top: 0;
+        background-color: #0f172a;
+        color: #94a3b8;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        z-index: 10;
+    }
+    
+    .table-modern tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: #e2e8f0;
+        font-size: 0.9rem;
+    }
+    
+    .table-modern tbody tr {
+        transition: background-color 0.2s;
+    }
+    
+    .table-modern tbody tr:hover {
+        background-color: rgba(255, 255, 255, 0.03);
+    }
+    
+    /* Action Badges */
+    .badge-action {
+        padding: 0.4rem 0.6rem;
+        border-radius: 4px;
+        font-weight: 500;
+        font-size: 0.75rem;
+        letter-spacing: 0.02em;
+        display: inline-block;
+        border: 1px solid transparent;
+    }
+    
+    /* Success / Positive */
+    .badge-success { background-color: rgba(16, 185, 129, 0.1); color: #10b981; border-color: rgba(16, 185, 129, 0.2); }
+    /* Danger / Negative */
+    .badge-danger { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2); }
+    /* Warning / Neutral */
+    .badge-warning { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.2); }
+    /* Info / System */
+    .badge-info { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; border-color: rgba(59, 130, 246, 0.2); }
+    /* Default */
+    .badge-secondary { background-color: rgba(148, 163, 184, 0.1); color: #94a3b8; border-color: rgba(148, 163, 184, 0.2); }
+
+    /* Object Cell styling */
+    .obj-cell {
+        display: flex;
+        flex-direction: column;
+    }
+    .obj-name {
+        font-weight: 500;
+        color: #f8fafc;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .obj-type {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        margin-left: 1.5rem;
+    }
+
+    /* Pagination */
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 1rem;
+        margin-top: auto;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .pagination-info {
+        color: #94a3b8;
+        font-size: 0.85rem;
+    }
+    
+    .pagination {
+        margin: 0;
+        gap: 0.25rem;
+    }
+    
+    .page-link {
+        background-color: transparent;
+        border: 1px solid transparent;
+        color: #94a3b8;
+        padding: 0.4rem 0.75rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+    }
+    
+    .page-link:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+        color: #f8fafc;
+        border-color: transparent;
+    }
+    
+    .page-item.active .page-link {
+        background-color: #3b82f6;
+        border-color: #3b82f6;
+        color: #ffffff;
+    }
+    
+    .page-item.disabled .page-link {
+        color: #475569;
+        background-color: transparent;
+    }
+
+</style>
+
+<div class="page-container">
+    
+    <!-- Right Content (Full Width Now) -->
+    <div class="mmc-right">
+        
+        <!-- Header & Action Bar -->
+        <div class="page-header pb-0">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="page-title"><i class="bi bi-journal-text me-2 text-primary"></i> Audit Logs</h1>
+                    <p class="page-subtitle mb-0">Monitor all changes and activities across your Active Directory environment.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn-action" onclick="exportTableToCSV('audit_logs.csv')">
+                        <i class="bi bi-download me-2"></i> Export Current Page
+                    </button>
+                    <button class="btn-action" onclick="window.location.reload()">
+                        <i class="bi bi-arrow-clockwise me-2"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Professional Filter Toolbar -->
+            <div class="card border-0 shadow-sm mb-4 bg-transparent">
+                <div class="card-body p-0">
+                    <form method="GET" action="{{ url_for('audit_logs') }}" class="row g-2 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted mb-1">Search Logs</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent border-secondary text-muted"><i class="bi bi-search"></i></span>
+                                <input type="text" name="search" class="form-control bg-transparent border-secondary text-light" placeholder="Search logs..." value="{{ search }}">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted mb-1">Action Type</label>
+                            <select name="action_type" class="form-select bg-transparent border-secondary text-light">
+                                <option value="" class="bg-dark">All Actions</option>
+                                {% for act in action_list %}
+                                    <option value="{{ act }}" class="bg-dark" {% if action_filter == act %}selected{% endif %}>{{ act }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted mb-1">Target Type</label>
+                            <select name="target_type" class="form-select bg-transparent border-secondary text-light">
+                                <option value="" class="bg-dark">All Targets</option>
+                                {% for tgt in target_list %}
+                                    <option value="{{ tgt }}" class="bg-dark" {% if target_filter == tgt %}selected{% endif %}>{{ tgt }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted mb-1">Performed By</label>
+                            <select name="user_id" class="form-select bg-transparent border-secondary text-light">
+                                <option value="" class="bg-dark">All Users</option>
+                                {% for u in users %}
+                                    <option value="{{ u.id }}" class="bg-dark" {% if user_filter|string == u.id|string %}selected{% endif %}>{{ u.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-auto">
+                            <button type="submit" class="btn btn-outline-primary"><i class="bi bi-funnel me-1"></i> Filter</button>
+                            <a href="{{ url_for('audit_logs') }}" class="btn btn-outline-secondary">Reset</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-
-        <!-- Pagination -->
-        {% if pagination %}
-        <nav aria-label="Logs pagination" class="mt-auto pt-3">
-            <ul class="pagination justify-content-center mb-0">
-                {% if pagination.has_prev %}
-                    <li class="page-item">
-                        <a class="page-link" href="{{ url_for('audit_logs', page=pagination.prev_num, search=search) }}">Previous</a>
-                    </li>
-                {% else %}
-                    <li class="page-item disabled">
-                        <span class="page-link">Previous</span>
-                    </li>
-                {% endif %}
+        
+        <!-- Table Area -->
+        <div class="table-container">
+            {% if logs %}
+            <div class="table-responsive flex-grow-1 rounded border border-secondary border-opacity-25" style="background-color: #1e293b; max-height: 100%;">
+                <table class="table table-modern mb-0" id="auditTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%">Timestamp <i class="bi bi-arrow-down-short ms-1"></i></th>
+                            <th style="width: 15%">User</th>
+                            <th style="width: 15%">Action</th>
+                            <th style="width: 20%">Target</th>
+                            <th style="width: 25%">Details</th>
+                            <th style="width: 10%">IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        {% for log in logs %}
+                        <tr>
+                            <td class="text-muted">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            
+                            <td>
+                                <div class="obj-cell">
+                                    <div class="obj-name">
+                                        <div class="bg-primary bg-opacity-25 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.7rem; font-weight:bold;">
+                                            {{ log.user.username[:2]|upper if log.user else 'AD' }}
+                                        </div>
+                                        {{ log.user.username if log.user else 'System' }}
+                                    </div>
+                                    <div class="obj-type">Administrator</div>
+                                </div>
+                            </td>
+                            
+                            <td>
+                                {% set action_lower = log.action|lower %}
+                                {% set badge_class = 'badge-secondary' %}
+                                
+                                {% if 'login' in action_lower or 'unlocked' in action_lower or 'created' in action_lower or 'added' in action_lower %}
+                                    {% set badge_class = 'badge-success' %}
+                                {% elif 'deleted' in action_lower or 'failed' in action_lower or 'locked' in action_lower or 'off' in action_lower %}
+                                    {% set badge_class = 'badge-danger' %}
+                                {% elif 'updated' in action_lower or 'modified' in action_lower or 'restart' in action_lower or 'on' in action_lower %}
+                                    {% set badge_class = 'badge-warning' %}
+                                {% elif 'logout' in action_lower %}
+                                    {% set badge_class = 'badge-info' %}
+                                {% endif %}
+                                
+                                <span class="badge-action {{ badge_class }}">{{ log.action }}</span>
+                            </td>
+                            
+                            <td>
+                                {% set target_lower = log.target|lower %}
+                                {% set icon_class = 'bi-person' %}
+                                {% set target_type = 'Object' %}
+                                
+                                {% if 'ou:' in target_lower or 'department' in target_lower %}
+                                    {% set icon_class = 'bi-folder-fill text-warning' %}
+                                    {% set target_type = 'Organizational Unit' %}
+                                {% elif 'group' in target_lower %}
+                                    {% set icon_class = 'bi-people text-info' %}
+                                    {% set target_type = 'Group' %}
+                                {% elif 'computer' in target_lower or 'pc' in target_lower %}
+                                    {% set icon_class = 'bi-pc-display text-primary' %}
+                                    {% set target_type = 'Computer' %}
+                                {% else %}
+                                    {% set icon_class = 'bi-person text-secondary' %}
+                                    {% set target_type = 'User' %}
+                                {% endif %}
+                                
+                                <div class="obj-cell">
+                                    <div class="obj-name">
+                                        <i class="bi {{ icon_class }}"></i>
+                                        {{ log.target }}
+                                    </div>
+                                    <div class="obj-type">{{ target_type }}</div>
+                                </div>
+                            </td>
+                            
+                            <td><span class="text-muted" style="font-size: 0.85rem;">{{ log.details }}</span></td>
+                            <td><span class="text-muted font-monospace" style="font-size: 0.85rem;">{{ log.ip_address or '127.0.0.1' }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if pagination %}
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Showing {{ (pagination.page - 1) * pagination.per_page + 1 }} to {{ [(pagination.page * pagination.per_page), pagination.total]|min }} of {{ pagination.total }} results
+                </div>
                 
-                {% for page_num in pagination.iter_pages() %}
-                    {% if page_num %}
-                        {% if page_num != pagination.page %}
-                            <li class="page-item">
+                <ul class="pagination">
+                    <li class="page-item {{ 'disabled' if not pagination.has_prev else '' }}">
+                        <a class="page-link" href="{{ url_for('audit_logs', page=pagination.prev_num, search=search) if pagination.has_prev else '#' }}">Previous</a>
+                    </li>
+                    
+                    {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            <li class="page-item {{ 'active' if page_num == pagination.page else '' }}">
                                 <a class="page-link" href="{{ url_for('audit_logs', page=page_num, search=search) }}">{{ page_num }}</a>
                             </li>
                         {% else %}
-                            <li class="page-item active">
-                                <span class="page-link">{{ page_num }}</span>
-                            </li>
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
                         {% endif %}
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">...</span>
-                        </li>
-                    {% endif %}
-                {% endfor %}
-                
-                {% if pagination.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="{{ url_for('audit_logs', page=pagination.next_num, search=search) }}">Next</a>
+                    {% endfor %}
+                    
+                    <li class="page-item {{ 'disabled' if not pagination.has_next else '' }}">
+                        <a class="page-link" href="{{ url_for('audit_logs', page=pagination.next_num, search=search) if pagination.has_next else '#' }}">Next</a>
                     </li>
-                {% else %}
-                    <li class="page-item disabled">
-                        <span class="page-link">Next</span>
-                    </li>
+                </ul>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <!-- Empty State -->
+            <div class="d-flex flex-column align-items-center justify-content-center h-100 text-center" style="min-height: 400px;">
+                <i class="bi bi-search text-secondary" style="font-size: 3rem; opacity: 0.5; margin-bottom: 1rem;"></i>
+                <h4 class="text-white">No logs found</h4>
+                <p class="text-muted">No audit events match your current search criteria.</p>
+                {% if search %}
+                <a href="{{ url_for('audit_logs') }}" class="btn btn-outline-primary mt-2">Clear Search</a>
                 {% endif %}
-            </ul>
-        </nav>
-        {% endif %}
-        
-        {% else %}
-        <p class="text-muted text-center">No audit logs found.</p>
-        {% endif %}
+            </div>
+            {% endif %}
+            
+        </div>
     </div>
 </div>
+
+<script>
+    function exportTableToCSV(filename) {
+        var csv = [];
+        var rows = document.querySelectorAll("#auditTable tr");
+        
+        for (var i = 0; i < rows.length; i++) {
+            var row = [], cols = rows[i].querySelectorAll("td, th");
+            
+            for (var j = 0; j < cols.length; j++) {
+                // Get text and clean it up (remove extra spaces and newlines)
+                var data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, " ").trim();
+                // Escape double quotes
+                data = data.replace(/"/g, '""');
+                row.push('"' + data + '"');
+            }
+            csv.push(row.join(","));
+        }
+
+        var csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
+        var downloadLink = document.createElement("a");
+        downloadLink.download = filename;
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+        downloadLink.style.display = "none";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    }
+</script>
 {% endblock %}

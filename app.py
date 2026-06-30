@@ -1080,6 +1080,9 @@ def audit_logs():
     """Audit logs page."""
     page = request.args.get('page', 1, type=int)
     search = request.args.get('search', '', type=str)
+    user_filter = request.args.get('user_id', '', type=str)
+    action_filter = request.args.get('action_type', '', type=str)
+    target_filter = request.args.get('target_type', '', type=str)
     
     query = AuditLog.query
     if search:
@@ -1088,13 +1091,35 @@ def audit_logs():
             (AuditLog.target.contains(search)) |
             (AuditLog.details.contains(search))
         )
+        
+    if user_filter:
+        query = query.filter(AuditLog.user_id == user_filter)
+        
+    if action_filter:
+        query = query.filter(AuditLog.action == action_filter)
+        
+    if target_filter:
+        if target_filter == 'Organizational Unit':
+            query = query.filter(AuditLog.target.ilike('%OU:%') | AuditLog.target.ilike('%department%'))
+        else:
+            query = query.filter(AuditLog.target.ilike(f'%{target_filter}%'))
     
     logs_pagination = query.order_by(AuditLog.timestamp.desc()).paginate(
         page=page, per_page=app.config['ITEMS_PER_PAGE'], error_out=False
     )
     
+    # Fetch distinct data for dropdowns
+    actions = db.session.query(AuditLog.action).distinct().order_by(AuditLog.action).all()
+    action_list = [a[0] for a in actions if a[0]]
+    
+    users = User.query.order_by(User.username).all()
+    target_list = ['User', 'Group', 'Computer', 'Organizational Unit']
+    
     return render_template('logs.html', title='Audit Logs',
-                         logs=logs_pagination.items, pagination=logs_pagination, search=search)
+                         logs=logs_pagination.items, pagination=logs_pagination, 
+                         search=search, user_filter=user_filter, 
+                         action_filter=action_filter, target_filter=target_filter,
+                         action_list=action_list, users=users, target_list=target_list)
 
 if __name__ == '__main__':
     with app.app_context():
