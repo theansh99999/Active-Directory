@@ -35,7 +35,7 @@ def read_write_required(f):
         
         # Check if user has read-write permission
         if not current_user.has_read_write_permission():
-            flash('You do not have permission to perform this action. Read-only access only.', 'error')
+            flash('You do not have permission to perform this action. Standard User access only.', 'danger')
             return redirect(url_for('dashboard'))
         
         return f(*args, **kwargs)

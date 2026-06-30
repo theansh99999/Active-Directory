@@ -467,7 +467,7 @@
         document.getElementById('assignSearchInput').addEventListener('input', (e) => {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
-                performAssignSearch(e.target.value);
+                performAssignSearch(e.target.value, 1);
             }, 300);
         });
     });
@@ -788,7 +788,7 @@
         document.getElementById('assignSearchView').style.display = 'block';
         document.getElementById('assignFooter').style.display = 'flex';
         document.getElementById('selectAllCheckbox').checked = false;
-        performAssignSearch('');
+        performAssignSearch('', 1);
     }
     
     window.backToChoice = function() {
@@ -797,18 +797,18 @@
         document.getElementById('assignFooter').style.display = 'none';
     }
     
-    window.performAssignSearch = function(query) {
+    window.performAssignSearch = function(query, page = 1) {
         const container = document.getElementById('assignResultsContainer');
         container.innerHTML = `
             <div class="text-center p-3 text-muted">
                 <div class="spinner-border spinner-border-sm" role="status"></div> Searching...
             </div>`;
             
-        fetch(`/api/ous/${currentSelectedId}/search-unassigned?type=${assignType}&q=${encodeURIComponent(query)}`)
+        fetch(`/api/ous/${currentSelectedId}/search-unassigned?type=${assignType}&q=${encodeURIComponent(query)}&page=${page}`)
             .then(res => res.json())
             .then(data => {
-                document.getElementById('assignResultCount').textContent = `${data.length} results`;
-                if (data.length === 0) {
+                document.getElementById('assignResultCount').textContent = `${data.total} results`;
+                if (data.items.length === 0) {
                     container.innerHTML = `
                         <div class="text-center p-4 text-muted">
                             <i class="bi bi-inbox fs-2"></i>
@@ -818,7 +818,7 @@
                 }
                 
                 let html = '';
-                data.forEach(item => {
+                data.items.forEach(item => {
                     const statusBadge = item.status ? `<span class="badge bg-secondary ms-2">${item.status}</span>` : '';
                     html += `
                         <div class="search-result-item d-flex align-items-center">
@@ -836,6 +836,16 @@
                         </div>
                     `;
                 });
+                
+                // Add pagination controls if more than 1 page
+                if (data.pages > 1) {
+                    html += `<div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="performAssignSearch('${query}', ${data.page - 1})" ${!data.has_prev ? 'disabled' : ''}>Previous</button>
+                        <span class="text-muted small">Page ${data.page} of ${data.pages}</span>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="performAssignSearch('${query}', ${data.page + 1})" ${!data.has_next ? 'disabled' : ''}>Next</button>
+                    </div>`;
+                }
+                
                 container.innerHTML = html;
                 checkAssignValidity();
             })
@@ -843,6 +853,7 @@
                 container.innerHTML = `<div class="text-danger p-3">Failed to load results.</div>`;
             });
     }
+    
     
     window.toggleSelectAll = function(cb) {
         document.querySelectorAll('.assign-item-cb').forEach(el => el.checked = cb.checked);

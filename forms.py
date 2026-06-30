@@ -94,10 +94,9 @@ class GroupForm(FlaskForm):
     """Group creation and editing form."""
     name = StringField('Group Name', validators=[DataRequired(), Length(min=3, max=50)])
     description = TextAreaField('Description', validators=[Length(max=200)])
-    permissions = SelectField('Permissions', 
-                            choices=[('read-only', 'Read Only'), ('read-write', 'Read Write')], 
-                            validators=[DataRequired()])
-    grant_admin_rights = BooleanField('Grant Admin Rights to Members', default=False)
+    permissions = SelectField('Group Role', 
+                            choices=[('user', 'User'), ('admin', 'Admin')], 
+                            validators=[DataRequired()], default='user')
     users = SelectMultipleField('Add Users to Group (Optional)', coerce=int, validators=[])
     ou_id = SelectField('Organizational Unit', coerce=int, validators=[])
     submit = SubmitField('Save Group')

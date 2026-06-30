@@ -57,21 +57,21 @@ def init_database():
         it_group = Group(
             name="IT Support",
             description="IT support staff with elevated privileges",
-            permissions="read-write"
+            permissions="admin"
         )
         db.session.add(it_group)
         
         users_group = Group(
             name="Domain Users",
-            description="Standard user group with basic access",
-            permissions="read-only"
+            description="Standard Users",
+            permissions="user"
         )
         db.session.add(users_group)
         
         hr_group = Group(
             name="HR Staff",
-            description="Human Resources staff group",
-            permissions="read-write"
+            description="Administrators of the domain",
+            permissions="admin"
         )
         db.session.add(hr_group)
         
@@ -230,7 +230,7 @@ def init_database():
         demo_actions = [
             ("User Login", "User: admin", "Successful login from IP: 127.0.0.1"),
             ("User Created", "User: jdoe", "New user created with role: User"),
-            ("Group Created", "Group: IT Support", "New group created with permissions: read-write"),
+            ("Group Created", "Group: IT Support", "New group created with permissions: admin"),
             ("Computer ON", "Computer: WS-IT-001", "Status changed from OFF to ON"),
             ("Password Reset", "User: asmith", "Admin reset password for user"),
             ("User Updated", "User: mjohnson", "User profile updated"),

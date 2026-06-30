@@ -2,7 +2,15 @@
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2"><i class="bi bi-speedometer2"></i> Dashboard</h1>
+    <h1 class="h2 d-flex align-items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 100 100" class="me-3 shadow-sm rounded">
+            <rect width="100" height="100" rx="20" fill="var(--bs-primary)"/>
+            <rect x="25" y="25" width="20" height="20" rx="4" fill="#ffffff"/>
+            <rect x="55" y="25" width="20" height="20" rx="4" fill="#ffffff" fill-opacity="0.5"/>
+            <rect x="25" y="55" width="50" height="20" rx="4" fill="#ffffff"/>
+        </svg>
+        Dashboard
+    </h1>
 </div>
 
 <!-- Statistics Cards -->
@@ -68,10 +76,10 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Activity</h5>
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> My Recent Activity</h5>
                 <a href="{{ url_for('audit_logs') }}" class="btn btn-sm btn-outline-primary">View All Logs</a>
             </div>
-            <div class="card-body">
+            <div class="card-body d-flex flex-column paginated-container">
                 {% if stats.recent_logs %}
                     <div class="table-responsive">
                         <table class="table table-hover">
@@ -85,7 +93,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for log in stats.recent_logs %}
+                                {% for log in recent_logs %}
                                 <tr>
                                     <td>
                                         <small>{{ log.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
@@ -96,10 +104,13 @@
                                     <td>
                                         <span class="badge 
                                             {% if 'Login' in log.action %}bg-success
+                                            {% elif 'Logout' in log.action %}bg-info
                                             {% elif 'Created' in log.action %}bg-primary
                                             {% elif 'Updated' in log.action %}bg-warning
                                             {% elif 'Deleted' in log.action %}bg-danger
-                                            {% else %}bg-info{% endif %}">
+                                            {% elif 'ON' in log.action or 'RESTART' in log.action %}bg-warning
+                                            {% elif 'Failed' in log.action %}bg-danger
+                                            {% else %}bg-secondary{% endif %}">
                                             {{ log.action }}
                                         </span>
                                     </td>
@@ -112,8 +123,57 @@
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Pagination -->
+                    {% if pagination %}
+                    <nav aria-label="Dashboard pagination" class="mt-auto pt-3">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if pagination.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('dashboard', page=pagination.prev_num) }}">Previous</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Previous</span>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
+                                {% if page_num %}
+                                    {% if page_num != pagination.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('dashboard', page=page_num) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if pagination.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('dashboard', page=pagination.next_num) }}">Next</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Next</span>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    
                 {% else %}
-                    <p class="text-muted">No recent activity to display.</p>
+                    <p class="text-muted text-center mt-4">
+                        <i class="bi bi-inbox fs-2"></i><br>
+                        No recent activity found.
+                    </p>
                 {% endif %}
             </div>
         </div>

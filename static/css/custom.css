@@ -1,5 +1,14 @@
 /* Custom CSS for Active Directory Clone */
 
+body {
+    padding-top: 56px; /* Space for the fixed-top navbar */
+}
+
+/* Ensure consistent height for paginated tables */
+.paginated-container {
+    min-height: 450px;
+}
+
 /* Dark mode customizations */
 [data-bs-theme="dark"] {
     --bs-body-bg: #1a1a1a;

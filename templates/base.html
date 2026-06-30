@@ -15,10 +15,25 @@
 <body>
     <!-- Navigation Bar -->
     {% if current_user.is_authenticated %}
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
-                <i class="bi bi-shield-check"></i> ACTIVE DIRECTORY
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard') }}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 100 100" class="me-2 shadow-sm rounded">
+                    <rect width="100" height="100" rx="12" fill="#00188F" />
+                    <rect x="26" y="20" width="30" height="60" rx="2" fill="#ffffff" />
+                    <rect x="30" y="28" width="22" height="3" fill="#00188F" />
+                    <rect x="30" y="65" width="22" height="4" fill="#00188F" />
+                    <rect x="30" y="72" width="22" height="4" fill="#00188F" />
+                    <polygon points="62.5,42 90,80 35,80" fill="#ffffff" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" />
+                    <rect x="56.5" y="54" width="12" height="7" fill="#00188F" />
+                    <rect x="61.5" y="61" width="2" height="5" fill="#00188F" />
+                    <rect x="48" y="66" width="29" height="2" fill="#00188F" />
+                    <rect x="48" y="66" width="2" height="5" fill="#00188F" />
+                    <rect x="75" y="66" width="2" height="5" fill="#00188F" />
+                    <rect x="44" y="71" width="10" height="6" fill="#00188F" />
+                    <rect x="71" y="71" width="10" height="6" fill="#00188F" />
+                </svg>
+                <strong style="letter-spacing: 1px; font-weight: 700;">ACTIVE DIRECTORY</strong>
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -27,11 +42,7 @@
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('dashboard') }}">
-                            <i class="bi bi-speedometer2"></i> Dashboard
-                        </a>
-                    </li>
+                    <!-- Dashboard link removed as per request -->
                 </ul>
                 
                 <ul class="navbar-nav">

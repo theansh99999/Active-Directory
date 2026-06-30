@@ -27,7 +27,7 @@
 
 <!-- Groups Table -->
 <div class="card">
-    <div class="card-body">
+    <div class="card-body d-flex flex-column paginated-container">
         {% if groups %}
         <div class="table-responsive">
             <table class="table table-hover">
@@ -49,12 +49,13 @@
                         <td><strong>{{ group.name }}</strong></td>
                         <td>{{ group.description or '-' }}</td>
                         <td>
-                            <span class="badge {% if group.permissions == 'read-write' %}bg-warning{% else %}bg-info{% endif %}">
-                                {{ group.permissions|title }}
-                            </span>
-                            {% if group.grant_admin_rights %}
-                            <span class="badge bg-danger ms-1" title="Members have admin rights">
+                            {% if group.permissions == 'admin' or group.grant_admin_rights %}
+                            <span class="badge bg-danger" title="Members have admin rights">
                                 <i class="bi bi-shield-check"></i> Admin
+                            </span>
+                            {% else %}
+                            <span class="badge bg-info">
+                                {{ group.permissions.title() }}
                             </span>
                             {% endif %}
                         </td>
@@ -90,12 +91,16 @@
         </div>
 
         <!-- Pagination -->
-        {% if pagination and pagination.pages > 1 %}
-        <nav aria-label="Group pagination">
-            <ul class="pagination justify-content-center">
+        {% if pagination %}
+        <nav aria-label="Group pagination" class="mt-auto pt-3">
+            <ul class="pagination justify-content-center mb-0">
                 {% if pagination.has_prev %}
                     <li class="page-item">
                         <a class="page-link" href="{{ url_for('groups', page=pagination.prev_num, search=search|default('')) }}">Previous</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Previous</span>
                     </li>
                 {% endif %}
                 
@@ -120,6 +125,10 @@
                 {% if pagination.has_next %}
                     <li class="page-item">
                         <a class="page-link" href="{{ url_for('groups', page=pagination.next_num, search=search|default('')) }}">Next</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Next</span>
                     </li>
                 {% endif %}
             </ul>

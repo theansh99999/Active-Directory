@@ -54,100 +54,22 @@
                         {% endif %}
                     </div>
                     
-                    <!-- IMPORTANT: Group Rights/Permissions Section -->
-                    <div class="card bg-light mb-4 border-primary border-2">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0"><i class="bi bi-shield-lock"></i> <strong>🔐 Group Rights/Permissions</strong></h5>
-                            <small>Every member will automatically inherit these rights</small>
+                    <!-- Group Role Section -->
+                    <div class="mb-4 p-3 bg-light border rounded">
+                        <label class="form-label fw-bold"><i class="bi bi-shield-lock"></i> Group Role</label>
+                        {{ form.permissions(class="form-select") }}
+                        <div class="form-text text-muted mt-2">
+                            <i class="bi bi-info-circle"></i> 
+                            <strong>User:</strong> Standard access to view group resources.<br>
+                            <strong>Admin:</strong> Grants full administrative control to all members of this group.
                         </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                {{ form.permissions.label(class="form-label fw-bold fs-5") }}
-                                {{ form.permissions(class="form-select form-select-lg") }}
-                                {% if form.permissions.errors %}
-                                    <div class="text-danger">
-                                        {% for error in form.permissions.errors %}
-                                            <small>{{ error }}</small>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
+                        {% if form.permissions.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.permissions.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
                             </div>
-
-                            <!-- Rights Comparison -->
-                            <div class="row mt-3">
-                                <div class="col-md-6">
-                                    <div class="border-start border-4 border-info ps-3 mb-3">
-                                        <h6 class="mb-2"><i class="bi bi-eye"></i> <strong>Read-Only</strong></h6>
-                                        <small class="text-muted">
-                                            Members can:
-                                            <ul class="mb-0 mt-2 ps-3">
-                                                <li>✓ View group resources</li>
-                                                <li>✓ Access information</li>
-                                                <li>✓ Download files</li>
-                                                <li>✗ Cannot edit</li>
-                                                <li>✗ Cannot delete</li>
-                                            </ul>
-                                        </small>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="border-start border-4 border-success ps-3 mb-3">
-                                        <h6 class="mb-2"><i class="bi bi-pencil-square"></i> <strong>Read/Write</strong></h6>
-                                        <small class="text-muted">
-                                            Members can:
-                                            <ul class="mb-0 mt-2 ps-3">
-                                                <li>✓ View resources</li>
-                                                <li>✓ Edit/Modify</li>
-                                                <li>✓ Create items</li>
-                                                <li>✓ Delete items</li>
-                                                <li>✓ Full access</li>
-                                            </ul>
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="alert alert-info mt-3 mb-0">
-                                <strong><i class="bi bi-lightbulb"></i> How Group Rights Work:</strong><br>
-                                <small>
-                                    ✓ You set rights for the entire group<br>
-                                    ✓ All members automatically inherit these rights<br>
-                                    ✓ Members have the same rights while in the group<br>
-                                    ✓ Rights removed immediately when member leaves<br>
-                                    ✓ Individual roles manageable from "Manage Members"
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Admin Rights Section -->
-                    <div class="card bg-warning bg-opacity-10 mb-4 border-warning border-2">
-                        <div class="card-header bg-warning text-dark">
-                            <h5 class="mb-0"><i class="bi bi-shield-check"></i> <strong>👑 Admin Rights</strong></h5>
-                            <small>Grant administrative privileges to all group members</small>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-check form-switch">
-                                {{ form.grant_admin_rights(class="form-check-input", id="grant_admin_rights", role="switch") }}
-                                <label class="form-check-label" for="grant_admin_rights">
-                                    <strong>Grant Admin Rights to All Members</strong>
-                                </label>
-                            </div>
-                            <small class="text-muted d-block mt-2">
-                                <i class="bi bi-info-circle"></i> When enabled, all members in this group will have:
-                                <ul class="mt-2 mb-0 ps-3">
-                                    <li>✓ Add/Delete users</li>
-                                    <li>✓ Create/Edit/Delete groups</li>
-                                    <li>✓ Manage computers</li>
-                                    <li>✓ Manage organizational units</li>
-                                    <li>✓ View audit logs</li>
-                                    <li>✗ Rights revoked if removed from group</li>
-                                </ul>
-                            </small>
-                            <div class="alert alert-warning mt-3 mb-0">
-                                <strong>⚠️ Warning:</strong> Admin rights grant full administrative access. Use with caution!
-                            </div>
-                        </div>
+                        {% endif %}
                     </div>
                     
                     <!-- Users Selection Section -->
@@ -245,6 +167,12 @@ function clearUserSearch() {
 }
 </script>
 <style>
+/* Dark Mode support for the custom block */
+[data-bs-theme="dark"] .bg-light.border {
+    background-color: var(--bs-dark) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
 #users option {
     padding: 8px;
 }

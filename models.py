@@ -98,8 +98,8 @@ class User(UserMixin, db.Model):
         # Admins always have read-write
         if self.is_admin():
             return True
-        # Check if member of any read-write permission group
-        read_write_groups = [g for g in self.groups if g.permissions == 'read-write']
+        # Check if member of any read-write permission group (legacy) or admin group
+        read_write_groups = [g for g in self.groups if g.permissions in ['read-write', 'admin']]
         return len(read_write_groups) > 0
     
     def __repr__(self):
@@ -111,7 +111,7 @@ class Group(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False, index=True)
     description = db.Column(db.Text, nullable=True)
-    permissions = db.Column(db.String(50), nullable=False, default='read-only')  # read-only, read-write
+    permissions = db.Column(db.String(50), nullable=False, default='user')  # user, admin
     grant_admin_rights = db.Column(db.Boolean, default=False, nullable=False)  # Whether members get admin role
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     ou_id = db.Column(db.Integer, db.ForeignKey('organizational_unit.id'), nullable=True)

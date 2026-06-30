@@ -31,8 +31,11 @@ def api_get_ou_objects(id):
 @login_required_with_message
 def api_search_unassigned_objects(id):
     """Fetch objects that are not currently assigned to this OU."""
+    from flask import current_app
     obj_type = request.args.get('type')
     query_str = request.args.get('q', '').lower()
+    page = request.args.get('page', 1, type=int)
+    per_page = current_app.config['ITEMS_PER_PAGE']
     
     results = []
     
@@ -45,7 +48,8 @@ def api_search_unassigned_objects(id):
                 User.first_name.ilike(f'%{query_str}%'),
                 User.last_name.ilike(f'%{query_str}%')
             ))
-        for u in query.limit(50).all():
+        pagination = query.order_by(User.username).paginate(page=page, per_page=per_page, error_out=False)
+        for u in pagination.items:
             current_ou = u.organizational_unit.name if u.organizational_unit else "None (Root)"
             results.append({"id": u.id, "name": u.username, "type_desc": u.email, "current_ou": current_ou})
             
@@ -53,7 +57,8 @@ def api_search_unassigned_objects(id):
         query = Group.query.filter((Group.ou_id != id) | (Group.ou_id.is_(None)))
         if query_str:
             query = query.filter(Group.name.ilike(f'%{query_str}%'))
-        for g in query.limit(50).all():
+        pagination = query.order_by(Group.name).paginate(page=page, per_page=per_page, error_out=False)
+        for g in pagination.items:
             current_ou = g.organizational_unit.name if g.organizational_unit else "None (Root)"
             results.append({"id": g.id, "name": g.name, "type_desc": "Group", "current_ou": current_ou})
             
@@ -64,14 +69,22 @@ def api_search_unassigned_objects(id):
                 Computer.name.ilike(f'%{query_str}%'),
                 Computer.ip_address.ilike(f'%{query_str}%')
             ))
-        for c in query.limit(50).all():
+        pagination = query.order_by(Computer.name).paginate(page=page, per_page=per_page, error_out=False)
+        for c in pagination.items:
             current_ou = c.organizational_unit.name if c.organizational_unit else "None (Root)"
             results.append({"id": c.id, "name": c.name, "type_desc": c.operating_system, "current_ou": current_ou, "status": c.status})
             
     else:
         return jsonify({"error": "Invalid type"}), 400
         
-    return jsonify(results)
+    return jsonify({
+        "items": results,
+        "page": pagination.page,
+        "pages": pagination.pages,
+        "total": pagination.total,
+        "has_next": pagination.has_next,
+        "has_prev": pagination.has_prev
+    })
 
 @ou_bp.route('/api/ous/<int:id>/assign-objects', methods=['POST'])
 @admin_required

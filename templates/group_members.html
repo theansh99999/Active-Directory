@@ -26,23 +26,26 @@
                 
                 <!-- Prominently Display Inherited Permissions -->
                 <hr class="my-3">
-                <div class="alert {% if group.permissions == 'read-write' %}alert-warning{% else %}alert-info{% endif %} mb-3">
-                    <strong><i class="bi bi-info-circle"></i> Members' Inherited Permissions:</strong><br>
-                    <span class="fs-5">
-                        <strong class="{% if group.permissions == 'read-write' %}text-warning{% else %}text-info{% endif %}">
-                            {{ group.permissions|title }} Access
+                <div class="alert {% if group.permissions == 'admin' %}alert-warning{% else %}alert-info{% endif %} mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                        <strong class="{% if group.permissions == 'admin' %}text-warning{% else %}text-info{% endif %}">
+                            <i class="bi bi-info-circle"></i> Group Role: {{ group.permissions.title() }}
                         </strong>
-                    </span>
-                    <br>
-                    <small class="mt-2 d-block">
-                        <strong>All {{ members|length }} members of this group automatically inherit these permissions.</strong><br>
-                        Members retain these permissions as long as they remain in the group.
-                        {% if group.permissions == 'read-write' %}
-                        They can: view, create, edit, and delete resources.
+                        <p class="mb-0 mt-1 small">
+                            Members of this group inherit these capabilities while they remain in the group.
+                        </p>
+                        </div>
+                        <div class="text-end">
+                        {% if group.permissions == 'admin' %}
+                            <span class="badge bg-warning text-dark"><i class="bi bi-pencil-square"></i> Full Access</span><br>
+                            <small class="text-muted d-block mt-1">They can: create, edit, delete, and view resources.</small>
                         {% else %}
-                        They can: view resources only (read-only access).
+                            <span class="badge bg-info"><i class="bi bi-eye"></i> View Only</span><br>
+                            <small class="text-muted d-block mt-1">They can: view resources only (Standard access).</small>
                         {% endif %}
-                    </small>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Admin Rights Section -->
@@ -139,7 +142,7 @@
             <div class="card-header bg-light">
                 <h5 class="mb-0"><i class="bi bi-list-ul"></i> Current Members ({{ members|length }})</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body d-flex flex-column paginated-container">
                 {% if members %}
                 <div class="table-responsive">
                     <table class="table table-hover">
@@ -184,6 +187,52 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Pagination -->
+                {% if pagination %}
+                <nav aria-label="Group members pagination" class="mt-auto pt-3">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if pagination.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('group_members', id=group.id, page=pagination.prev_num, search=search) }}">Previous</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Previous</span>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in pagination.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != pagination.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('group_members', id=group.id, page=page_num, search=search) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('group_members', id=group.id, page=pagination.next_num, search=search) }}">Next</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Next</span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
                 {% else %}
                 <p class="text-muted text-center">
                     <i class="bi bi-inbox"></i> No members in this group yet. Add your first member using the form above.

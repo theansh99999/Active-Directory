@@ -183,6 +183,8 @@ def logout():
 @login_required_with_message
 def dashboard():
     """Main dashboard."""
+    page = request.args.get('page', 1, type=int)
+    
     # Get summary statistics
     stats = {
         'total_users': User.query.count(),
@@ -190,11 +192,15 @@ def dashboard():
         'total_groups': Group.query.count(),
         'total_computers': Computer.query.count(),
         'computers_online': Computer.query.filter_by(status='ON').count(),
-        'total_ous': OrganizationalUnit.query.count(),
-        'recent_logs': AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(10).all()
+        'total_ous': OrganizationalUnit.query.count()
     }
     
-    return render_template('dashboard.html', title='Dashboard', stats=stats)
+    # Fetch paginated logs only for the current user
+    logs_query = AuditLog.query.filter_by(user_id=current_user.id).order_by(AuditLog.timestamp.desc())
+    pagination = logs_query.paginate(page=page, per_page=app.config['ITEMS_PER_PAGE'], error_out=False)
+    
+    return render_template('dashboard.html', title='Dashboard', stats=stats, 
+                           recent_logs=pagination.items, pagination=pagination)
 
 @app.route('/users')
 @login_required_with_message
@@ -400,7 +406,7 @@ def add_group():
             name=form.name.data,
             description=form.description.data,
             permissions=form.permissions.data,
-            grant_admin_rights=form.grant_admin_rights.data,
+            grant_admin_rights=(form.permissions.data == 'admin'),
             ou_id=form.ou_id.data if form.ou_id.data != 0 else None
         )
         
@@ -456,7 +462,7 @@ def edit_group(id):
         group.name = form.name.data
         group.description = form.description.data
         group.permissions = form.permissions.data
-        group.grant_admin_rights = form.grant_admin_rights.data
+        group.grant_admin_rights = (form.permissions.data == 'admin')
         group.ou_id = form.ou_id.data if form.ou_id.data != 0 else None
         
         db.session.commit()
@@ -505,16 +511,26 @@ def group_members(id):
     group = Group.query.get_or_404(id)
     form = AddUserToGroupForm(group=group)
     
-    # Get search parameter
+    # Get search and page parameters
     search = request.args.get('search', '', type=str)
+    page = request.args.get('page', 1, type=int)
     
-    # Filter members based on search
-    members = group.members
+    # Filter members based on search and paginate
+    query = User.query.filter(User.groups.any(id=id))
     if search:
-        members = [m for m in members if search.lower() in m.username.lower() or search.lower() in m.email.lower()]
+        query = query.filter(
+            db.or_(
+                User.username.contains(search),
+                User.email.contains(search)
+            )
+        )
+    
+    pagination = query.order_by(User.username).paginate(
+        page=page, per_page=app.config['ITEMS_PER_PAGE'], error_out=False
+    )
     
     return render_template('group_members.html', title=f'Manage Members - {group.name}', 
-                         group=group, members=members, form=form, search=search)
+                         group=group, members=pagination.items, pagination=pagination, form=form, search=search)
 
 @app.route('/groups/<int:id>/add-member', methods=['POST'])
 @admin_required

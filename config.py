@@ -26,7 +26,7 @@ class Config:
     ACCOUNT_LOCKOUT_DURATION = timedelta(minutes=1)
     
     # Application settings
-    ITEMS_PER_PAGE = 20
+    ITEMS_PER_PAGE = 5
     
 class DevelopmentConfig(Config):
     """Development configuration."""
