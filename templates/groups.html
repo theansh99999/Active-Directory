@@ -1,83 +1,226 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2"><i class="bi bi-collection"></i> Group Management</h1>
-    {% if current_user.is_authenticated and current_user.is_admin() %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-3">
+    <div>
+        <h1 class="h3 mb-0 d-flex align-items-center text-white fw-bold">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 100 100" class="me-2">
+                <circle cx="30" cy="40" r="12" fill="#3b82f6"/>
+                <circle cx="70" cy="40" r="12" fill="#0ea5e9"/>
+                <circle cx="50" cy="70" r="16" fill="#8b5cf6"/>
+            </svg>
+            Group Management
+        </h1>
+        <div class="text-muted small mt-1">Manage and organize groups in your directory</div>
+    </div>
+    {% if current_user.is_admin() %}
     <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="{{ url_for('add_group') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Add Group
+        <a href="{{ url_for('add_group') }}" class="btn btn-primary d-flex align-items-center">
+            <i class="bi bi-plus-circle-fill me-2"></i> Add Group
         </a>
     </div>
     {% endif %}
 </div>
 
-<!-- Search Bar -->
-<div class="row mb-3">
-    <div class="col-md-6">
-        <form method="GET" class="d-flex">
-            <input type="text" name="search" class="form-control" placeholder="Search groups..." 
-                   value="{{ search|default('') }}" onchange="this.form.submit()">
-            <button type="submit" class="btn btn-outline-secondary ms-2">
-                <i class="bi bi-search"></i>
-            </button>
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card h-100 border-0 stat-card">
+            <div class="card-body p-3 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="p-2 rounded bg-primary bg-opacity-10 text-primary"><i class="bi bi-collection-fill"></i></div>
+                    <h3 class="mb-0 text-white">{{ stats.total }}</h3>
+                </div>
+                <div class="text-muted small mb-3">Total Groups</div>
+                <svg width="100%" height="20" class="mt-auto">
+                    <polyline points="0,15 20,10 40,18 60,8 80,12 100,5" fill="none" stroke="var(--bs-primary)" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card h-100 border-0 stat-card">
+            <div class="card-body p-3 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="p-2 rounded bg-success bg-opacity-10 text-success"><i class="bi bi-shield-lock-fill"></i></div>
+                    <h3 class="mb-0 text-white">{{ stats.standard }}</h3>
+                </div>
+                <div class="text-muted small mb-3">Standard Groups</div>
+                <svg width="100%" height="20" class="mt-auto">
+                    <polyline points="0,15 20,12 40,8 60,15 80,10 100,5" fill="none" stroke="var(--bs-success)" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card h-100 border-0 stat-card" style="border-left-color: #f59e0b;">
+            <div class="card-body p-3 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="p-2 rounded bg-warning bg-opacity-10 text-warning"><i class="bi bi-shield-shaded"></i></div>
+                    <h3 class="mb-0 text-white">{{ stats.admin }}</h3>
+                </div>
+                <div class="text-muted small mb-3">Admin Groups</div>
+                <svg width="100%" height="20" class="mt-auto">
+                    <polyline points="0,20 20,15 40,15 60,10 80,12 100,5" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card h-100 border-0 stat-card" style="border-left-color: #0ea5e9;">
+            <div class="card-body p-3 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="p-2 rounded bg-info bg-opacity-10 text-info"><i class="bi bi-people-fill"></i></div>
+                    <h3 class="mb-0 text-white">{{ stats.members }}</h3>
+                </div>
+                <div class="text-muted small mb-3">Total Members</div>
+                <svg width="100%" height="20" class="mt-auto">
+                    <polyline points="0,15 20,5 40,10 60,15 80,5 100,5" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm mb-4 bg-transparent">
+    <div class="card-body p-0">
+        <form method="GET" action="{{ url_for('groups') }}" class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-secondary text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control bg-transparent border-secondary text-light" placeholder="Search groups by name, description..." value="{{ search }}">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Group Type</label>
+                <select name="group_type" class="form-select bg-transparent border-secondary text-light">
+                    <option value="" class="bg-dark">All Types</option>
+                    <option value="Admin" class="bg-dark" {% if group_type == 'Admin' %}selected{% endif %}>Admin Rights</option>
+                    <option value="Standard" class="bg-dark" {% if group_type == 'Standard' %}selected{% endif %}>Standard</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Permissions</label>
+                <select name="permission" class="form-select bg-transparent border-secondary text-light">
+                    <option value="" class="bg-dark">All Permissions</option>
+                    <option value="admin" class="bg-dark" {% if permission == 'admin' %}selected{% endif %}>Admin</option>
+                    <option value="user" class="bg-dark" {% if permission == 'user' %}selected{% endif %}>User</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex">
+                <button type="submit" class="btn btn-primary w-100 me-2 d-flex align-items-center justify-content-center">
+                    <i class="bi bi-funnel-fill me-1"></i> Filter
+                </button>
+                <a href="{{ url_for('groups') }}" class="btn btn-outline-secondary d-flex align-items-center justify-content-center" title="Reset Filters">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </a>
+            </div>
+            
+            <!-- Preserve sorting params in filters -->
+            <input type="hidden" name="sort_by" value="{{ sort_by }}">
+            <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
         </form>
     </div>
 </div>
 
 <!-- Groups Table -->
-<div class="card">
-    <div class="card-body d-flex flex-column paginated-container">
-        {% if groups %}
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Permissions</th>
-                        <th>Members</th>
-                        <th>Created</th>
-                        {% if current_user.is_authenticated and current_user.is_admin() %}
-                        <th>Actions</th>
-                        {% endif %}
-                    </tr>
-                </thead>
-                <tbody>
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0 table-responsive" style="max-height: 600px;">
+        <table class="table table-hover table-sticky-header mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th class="border-bottom-0 py-3 ps-4 text-muted small fw-medium" style="width: 25%;">
+                        <a href="{{ url_for('groups', search=search, group_type=group_type, permission=permission, sort_by='name', sort_dir='desc' if sort_by == 'name' and sort_dir == 'asc' else 'asc') }}" class="text-decoration-none text-muted d-flex align-items-center">
+                            Group <i class="bi bi-arrow-down-up ms-1" style="font-size:0.7rem;"></i>
+                        </a>
+                    </th>
+                    <th class="border-bottom-0 py-3 text-muted small fw-medium" style="width: 25%;">Description</th>
+                    <th class="border-bottom-0 py-3 text-muted small fw-medium">
+                        <a href="{{ url_for('groups', search=search, group_type=group_type, permission=permission, sort_by='grant_admin_rights', sort_dir='desc' if sort_by == 'grant_admin_rights' and sort_dir == 'asc' else 'asc') }}" class="text-decoration-none text-muted d-flex align-items-center">
+                            Type <i class="bi bi-arrow-down-up ms-1" style="font-size:0.7rem;"></i>
+                        </a>
+                    </th>
+                    <th class="border-bottom-0 py-3 text-muted small fw-medium">
+                        <a href="{{ url_for('groups', search=search, group_type=group_type, permission=permission, sort_by='permissions', sort_dir='desc' if sort_by == 'permissions' and sort_dir == 'asc' else 'asc') }}" class="text-decoration-none text-muted d-flex align-items-center">
+                            Permissions <i class="bi bi-arrow-down-up ms-1" style="font-size:0.7rem;"></i>
+                        </a>
+                    </th>
+                    <th class="border-bottom-0 py-3 text-muted small fw-medium">
+                        <a href="{{ url_for('groups', search=search, group_type=group_type, permission=permission, sort_by='ou_id', sort_dir='desc' if sort_by == 'ou_id' and sort_dir == 'asc' else 'asc') }}" class="text-decoration-none text-muted d-flex align-items-center">
+                            OU <i class="bi bi-arrow-down-up ms-1" style="font-size:0.7rem;"></i>
+                        </a>
+                    </th>
+                    <th class="border-bottom-0 py-3 text-muted small fw-medium">
+                        <a href="{{ url_for('groups', search=search, group_type=group_type, permission=permission, sort_by='members', sort_dir='desc' if sort_by == 'members' and sort_dir == 'asc' else 'asc') }}" class="text-decoration-none text-muted d-flex align-items-center">
+                            Members <i class="bi bi-arrow-down-up ms-1" style="font-size:0.7rem;"></i>
+                        </a>
+                    </th>
+                    <th class="border-bottom-0 py-3 text-muted small fw-medium">
+                        <a href="{{ url_for('groups', search=search, group_type=group_type, permission=permission, sort_by='created_at', sort_dir='desc' if sort_by == 'created_at' and sort_dir == 'asc' else 'asc') }}" class="text-decoration-none text-muted d-flex align-items-center">
+                            Created <i class="bi bi-arrow-down-up ms-1" style="font-size:0.7rem;"></i>
+                        </a>
+                    </th>
+                    {% if current_user.is_admin() %}
+                    <th class="border-bottom-0 py-3 text-end pe-4 text-muted small fw-medium">Actions</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% if groups %}
                     {% for group in groups %}
-                    <tr>
-                        <td><strong>{{ group.name }}</strong></td>
-                        <td>{{ group.description or '-' }}</td>
-                        <td>
-                            {% if group.permissions == 'admin' or group.grant_admin_rights %}
-                            <span class="badge bg-danger" title="Members have admin rights">
-                                <i class="bi bi-shield-check"></i> Admin
+                    <!-- We make the row clickable, passing event to window.location if not clicking a button/link -->
+                    <tr class="clickable-row border-bottom border-secondary" onclick="if(!event.target.closest('a') && !event.target.closest('button')) window.location.href='{{ url_for('edit_group', id=group.id) }}'">
+                        <td class="ps-4 py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="user-avatar avatar-{{ group.id % 5 }} me-3 flex-shrink-0">
+                                    {{ group.name[0:2]|upper }}
+                                </div>
+                                <div>
+                                    <div class="text-white fw-semibold mb-0">{{ group.name }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3 text-muted small text-truncate" style="max-width: 250px;" title="{{ group.description or 'No description' }}">
+                            {{ group.description or '-' }}
+                        </td>
+                        <td class="py-3">
+                            <span class="badge badge-pill-outline {% if group.grant_admin_rights %}text-warning{% else %}text-primary{% endif %}">
+                                {% if group.grant_admin_rights %}Admin{% else %}Standard{% endif %}
                             </span>
+                        </td>
+                        <td class="py-3">
+                            <span class="badge badge-pill-outline {% if group.permissions == 'admin' %}text-danger{% else %}text-info{% endif %}">
+                                {{ group.permissions|title }}
+                            </span>
+                        </td>
+                        <td class="py-3">
+                            {% if group.ou %}
+                                <a href="{{ url_for('ou_bp.organizational_units', selected_ou=group.ou.id) }}" class="badge bg-secondary bg-opacity-25 text-light text-decoration-none border border-secondary" onclick="event.stopPropagation();">{{ group.ou.name }}</a>
                             {% else %}
-                            <span class="badge bg-info">
-                                {{ group.permissions.title() }}
-                            </span>
+                                <span class="text-muted small">-</span>
                             {% endif %}
                         </td>
-                        <td>
-                            <span class="badge bg-secondary">{{ group.members|length }} members</span>
+                        <td class="py-3">
+                            <a href="{{ url_for('group_members', id=group.id) }}" class="badge bg-secondary bg-opacity-25 text-light text-decoration-none border border-secondary d-inline-flex align-items-center" onclick="event.stopPropagation();" title="Manage Members">
+                                <i class="bi bi-people me-1"></i> {{ group.members|length }} member{% if group.members|length != 1 %}s{% endif %}
+                            </a>
                         </td>
-                        <td>
-                            <small>{{ group.created_at.strftime('%Y-%m-%d') }}</small>
+                        <td class="py-3">
+                            <div class="text-light small">{{ group.created_at.strftime('%d %b %Y') }}</div>
+                            <div class="text-muted" style="font-size:0.7rem;">{{ group.created_at.strftime('%H:%M') }}</div>
                         </td>
-                        {% if current_user.is_authenticated and current_user.is_admin() %}
-                        <td>
+                        {% if current_user.is_admin() %}
+                        <td class="py-3 text-end pe-4 table-actions">
                             <div class="btn-group" role="group">
-                                <a href="{{ url_for('group_members', id=group.id) }}" 
-                                   class="btn btn-sm btn-outline-info" title="Manage Members">
+                                <a href="{{ url_for('group_members', id=group.id) }}" class="btn btn-sm text-info" title="Manage Members" onclick="event.stopPropagation();">
                                     <i class="bi bi-people"></i>
                                 </a>
-                                <a href="{{ url_for('edit_group', id=group.id) }}" 
-                                   class="btn btn-sm btn-outline-primary" title="Edit">
+                                <a href="{{ url_for('edit_group', id=group.id) }}" class="btn btn-sm text-primary" title="Edit" onclick="event.stopPropagation();">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <button type="button" class="btn btn-sm btn-outline-danger" 
-                                        onclick="confirmDelete('{{ group.name }}', '{{ url_for('delete_group', id=group.id) }}')" 
+                                <button type="button" class="btn btn-sm text-danger" 
+                                        onclick="event.stopPropagation(); confirmDelete('{{ group.name }}', '{{ url_for('delete_group', id=group.id) }}')" 
                                         title="Delete">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -86,72 +229,66 @@
                         {% endif %}
                     </tr>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Pagination -->
-        {% if pagination %}
-        <nav aria-label="Group pagination" class="mt-auto pt-3">
-            <ul class="pagination justify-content-center mb-0">
-                {% if pagination.has_prev %}
-                    <li class="page-item">
-                        <a class="page-link" href="{{ url_for('groups', page=pagination.prev_num, search=search|default('')) }}">Previous</a>
-                    </li>
                 {% else %}
-                    <li class="page-item disabled">
-                        <span class="page-link">Previous</span>
-                    </li>
+                    <tr>
+                        <td colspan="{% if current_user.is_admin() %}8{% else %}7{% endif %}" class="text-center py-5">
+                            <div class="text-muted d-flex flex-column align-items-center">
+                                <i class="bi bi-collection fs-1 mb-3 opacity-50"></i>
+                                <h5>No groups found</h5>
+                                <p class="small mb-0">Try adjusting your filters or search query.</p>
+                                {% if search or group_type or permission %}
+                                    <a href="{{ url_for('groups') }}" class="btn btn-sm btn-outline-secondary mt-3">Clear Filters</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
                 {% endif %}
-                
-                {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-                    {% if page_num %}
-                        {% if page_num != pagination.page %}
-                            <li class="page-item">
-                                <a class="page-link" href="{{ url_for('groups', page=page_num, search=search|default('')) }}">{{ page_num }}</a>
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Footer Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="card-footer bg-transparent border-0 py-3 px-4 d-flex justify-content-between align-items-center flex-wrap">
+        <div class="text-muted small mb-2 mb-md-0">
+            Showing {{ (pagination.page - 1) * pagination.per_page + 1 }} to {% if pagination.page == pagination.pages %}{{ pagination.total }}{% else %}{{ pagination.page * pagination.per_page }}{% endif %} of {{ pagination.total }} groups
+        </div>
+        
+        <div class="d-flex align-items-center">
+            
+            <nav aria-label="Pagination">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                        <a class="page-link bg-transparent border-secondary text-light" href="{% if pagination.has_prev %}{{ url_for('groups', page=pagination.prev_num, search=search, group_type=group_type, permission=permission, sort_by=sort_by, sort_dir=sort_dir) }}{% else %}#{% endif %}"><i class="bi bi-chevron-left"></i></a>
+                    </li>
+                    
+                    {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=2, right_edge=1) %}
+                        {% if page_num %}
+                            <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                <a class="page-link {% if page_num == pagination.page %}bg-primary border-primary{% else %}bg-transparent border-secondary text-light{% endif %}" href="{{ url_for('groups', page=page_num, search=search, group_type=group_type, permission=permission, sort_by=sort_by, sort_dir=sort_dir) }}">{{ page_num }}</a>
                             </li>
                         {% else %}
-                            <li class="page-item active">
-                                <span class="page-link">{{ page_num }}</span>
-                            </li>
+                            <li class="page-item disabled"><span class="page-link bg-transparent border-secondary text-muted">...</span></li>
                         {% endif %}
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">...</span>
-                        </li>
-                    {% endif %}
-                {% endfor %}
-                
-                {% if pagination.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="{{ url_for('groups', page=pagination.next_num, search=search|default('')) }}">Next</a>
+                    {% endfor %}
+                    
+                    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                        <a class="page-link bg-transparent border-secondary text-light" href="{% if pagination.has_next %}{{ url_for('groups', page=pagination.next_num, search=search, group_type=group_type, permission=permission, sort_by=sort_by, sort_dir=sort_dir) }}{% else %}#{% endif %}"><i class="bi bi-chevron-right"></i></a>
                     </li>
-                {% else %}
-                    <li class="page-item disabled">
-                        <span class="page-link">Next</span>
-                    </li>
-                {% endif %}
-            </ul>
-        </nav>
-        {% endif %}
-        
-        {% else %}
-        <p class="text-muted text-center">No groups found.</p>
-        {% endif %}
+                </ul>
+            </nav>
+        </div>
     </div>
+    {% endif %}
 </div>
-{% endblock %}
 
-{% block scripts %}
+<!-- Ensure tooltips are initialized -->
 <script>
-function confirmDelete(groupName, deleteUrl) {
-    if (confirm('Are you sure you want to delete group "' + groupName + '"? This action cannot be undone.')) {
-        var form = document.createElement('form');
-        form.method = 'POST';
-        form.action = deleteUrl;
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
+    document.addEventListener("DOMContentLoaded", function(){
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    });
 </script>
 {% endblock %}

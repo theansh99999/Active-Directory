@@ -9,7 +9,7 @@ from datetime import datetime
 import os
 
 from config import config
-from models import db, User, Group, OrganizationalUnit, Computer, AuditLog
+from models import db, User, Group, OrganizationalUnit, Computer, AuditLog, group_members as group_members_table
 from forms import LoginForm, UserForm, PasswordResetForm, GroupForm, OrganizationalUnitForm, ComputerForm, AdminPasswordResetForm, AddUserToGroupForm
 from auth import admin_required, login_required_with_message, get_client_ip, read_write_required
 
@@ -570,17 +570,55 @@ def groups():
     """Group management page."""
     page = request.args.get('page', 1, type=int)
     search = request.args.get('search', '', type=str)
+    group_type = request.args.get('group_type', '', type=str)
+    permission = request.args.get('permission', '', type=str)
+    
+    sort_by = request.args.get('sort_by', 'name', type=str)
+    sort_dir = request.args.get('sort_dir', 'asc', type=str)
     
     query = Group.query
-    if search:
-        query = query.filter(Group.name.contains(search))
     
-    groups_pagination = query.order_by(Group.name).paginate(
+    # Filters
+    if search:
+        query = query.filter((Group.name.contains(search)) | (Group.description.contains(search)))
+    
+    if group_type == 'Admin':
+        query = query.filter(Group.grant_admin_rights == True)
+    elif group_type == 'Standard':
+        query = query.filter(Group.grant_admin_rights == False)
+        
+    if permission:
+        query = query.filter(Group.permissions == permission)
+    
+    # Sorting
+    if sort_by == 'members':
+        # Need to join and group by or we just omit server-side sort for members, 
+        # but let's fall back to name for complex fields unless we add a counter column.
+        sort_column = Group.name 
+    else:
+        sort_column = getattr(Group, sort_by, Group.name)
+        
+    if sort_dir == 'desc':
+        query = query.order_by(sort_column.desc())
+    else:
+        query = query.order_by(sort_column.asc())
+    
+    groups_pagination = query.paginate(
         page=page, per_page=app.config['ITEMS_PER_PAGE'], error_out=False
     )
     
+    # Stats calculation
+    stats = {
+        'total': Group.query.count(),
+        'admin': Group.query.filter_by(grant_admin_rights=True).count(),
+        'standard': Group.query.filter_by(grant_admin_rights=False).count(),
+        'members': db.session.query(group_members_table).count()
+    }
+    
     return render_template('groups.html', title='Group Management',
-                         groups=groups_pagination.items, pagination=groups_pagination, search=search)
+                         groups=groups_pagination.items, pagination=groups_pagination, 
+                         search=search, group_type=group_type, permission=permission,
+                         sort_by=sort_by, sort_dir=sort_dir, stats=stats)
 
 @app.route('/groups/add', methods=['GET', 'POST'])
 @admin_required
