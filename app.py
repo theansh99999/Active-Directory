@@ -853,17 +853,67 @@ def computers():
     """Computer management page."""
     page = request.args.get('page', 1, type=int)
     search = request.args.get('search', '', type=str)
+    status = request.args.get('status', '', type=str)
+    os_filter = request.args.get('os_filter', '', type=str)
+    device_type = request.args.get('device_type', '', type=str)
+    ou_id = request.args.get('ou_id', '', type=int)
+    
+    sort_by = request.args.get('sort_by', 'name', type=str)
+    sort_dir = request.args.get('sort_dir', 'asc', type=str)
     
     query = Computer.query
-    if search:
-        query = query.filter(Computer.name.contains(search))
     
-    computers_pagination = query.order_by(Computer.name).paginate(
+    # Filters
+    if search:
+        query = query.filter((Computer.name.contains(search)) | (Computer.description.contains(search)) | (Computer.ip_address.contains(search)))
+        
+    if status:
+        query = query.filter(Computer.status == status)
+        
+    if os_filter:
+        query = query.filter(Computer.operating_system == os_filter)
+        
+    if device_type:
+        query = query.filter(Computer.device_type == device_type)
+        
+    if ou_id:
+        query = query.filter(Computer.ou_id == ou_id)
+        
+    # Sorting
+    if sort_by == 'ou_id':
+        sort_column = Computer.ou_id
+    else:
+        sort_column = getattr(Computer, sort_by, Computer.name)
+        
+    if sort_dir == 'desc':
+        query = query.order_by(sort_column.desc())
+    else:
+        query = query.order_by(sort_column.asc())
+    
+    computers_pagination = query.paginate(
         page=page, per_page=app.config['ITEMS_PER_PAGE'], error_out=False
     )
     
+    # Stats calculation
+    stats = {
+        'total': Computer.query.count(),
+        'online': Computer.query.filter_by(status='ON').count(),
+        'offline': Computer.query.filter(Computer.status.in_(['OFF', 'RESTART'])).count(),
+        'servers': Computer.query.filter_by(device_type='Server').count(),
+        'workstations': Computer.query.filter_by(device_type='Workstation').count(),
+        'domain_controllers': Computer.query.filter_by(device_type='Domain Controller').count()
+    }
+    
+    # Dropdown data
+    all_os = [row[0] for row in db.session.query(Computer.operating_system).filter(Computer.operating_system.isnot(None), Computer.operating_system != '').distinct().all()]
+    all_device_types = [row[0] for row in db.session.query(Computer.device_type).filter(Computer.device_type.isnot(None), Computer.device_type != '').distinct().all()]
+    all_ous = OrganizationalUnit.query.order_by(OrganizationalUnit.name).all()
+    
     return render_template('computers.html', title='Computer Management',
-                         computers=computers_pagination.items, pagination=computers_pagination, search=search)
+                         computers=computers_pagination.items, pagination=computers_pagination, 
+                         search=search, status=status, os_filter=os_filter, device_type=device_type, ou_id=ou_id,
+                         sort_by=sort_by, sort_dir=sort_dir, stats=stats,
+                         all_os=all_os, all_device_types=all_device_types, all_ous=all_ous)
 
 @app.route('/computers/add', methods=['GET', 'POST'])
 @admin_required
@@ -883,6 +933,7 @@ def add_computer():
             name=form.name.data,
             description=form.description.data,
             operating_system=form.operating_system.data,
+            device_type=form.device_type.data,
             ip_address=form.ip_address.data,
             status=form.status.data,
             ou_id=form.ou_id.data if form.ou_id.data != 0 else None
@@ -918,6 +969,7 @@ def edit_computer(id):
         computer.name = form.name.data
         computer.description = form.description.data
         computer.operating_system = form.operating_system.data
+        computer.device_type = form.device_type.data
         computer.ip_address = form.ip_address.data
         computer.status = form.status.data
         computer.ou_id = form.ou_id.data if form.ou_id.data != 0 else None

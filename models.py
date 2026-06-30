@@ -165,6 +165,7 @@ class Computer(db.Model):
     description = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(20), nullable=False, default='OFF')  # ON, OFF, RESTART
     operating_system = db.Column(db.String(100), nullable=True)
+    device_type = db.Column(db.String(50), nullable=True)
     ip_address = db.Column(db.String(15), nullable=True)
     ou_id = db.Column(db.Integer, db.ForeignKey('organizational_unit.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)

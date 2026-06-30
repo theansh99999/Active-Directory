@@ -180,7 +180,35 @@ class ComputerForm(FlaskForm):
     """Computer creation and editing form."""
     name = StringField('Computer Name', validators=[DataRequired(), Length(min=3, max=50)])
     description = TextAreaField('Description', validators=[Length(max=200)])
-    operating_system = StringField('Operating System', validators=[DataRequired(), Length(max=100)])
+    operating_system = SelectField('Operating System', 
+                        choices=[
+                            ('', 'Select Operating System'),
+                            ('Windows Server 2025', 'Windows Server 2025'),
+                            ('Windows Server 2022', 'Windows Server 2022'),
+                            ('Windows Server 2019', 'Windows Server 2019'),
+                            ('Windows Server 2016', 'Windows Server 2016'),
+                            ('Windows 11 Enterprise', 'Windows 11 Enterprise'),
+                            ('Windows 11 Pro', 'Windows 11 Pro'),
+                            ('Windows 10 Enterprise', 'Windows 10 Enterprise'),
+                            ('Windows 10 Pro', 'Windows 10 Pro'),
+                            ('Ubuntu Server', 'Ubuntu Server'),
+                            ('Ubuntu Desktop', 'Ubuntu Desktop'),
+                            ('Debian', 'Debian'),
+                            ('CentOS', 'CentOS'),
+                            ('Red Hat Enterprise Linux', 'Red Hat Enterprise Linux'),
+                            ('macOS', 'macOS'),
+                            ('Other', 'Other')
+                        ],
+                        validators=[DataRequired()])
+    device_type = SelectField('Device Type', 
+                        choices=[
+                            ('Workstation', 'Workstation'),
+                            ('Server', 'Server'),
+                            ('Domain Controller', 'Domain Controller'),
+                            ('Virtual Machine', 'Virtual Machine'),
+                            ('Laptop', 'Laptop')
+                        ],
+                        validators=[DataRequired()])
     ip_address = StringField('IP Address', validators=[DataRequired(), Length(max=15)])
     status = SelectField('Status', 
                         choices=[('ON', 'ON'), ('OFF', 'OFF'), ('RESTART', 'RESTART')], 

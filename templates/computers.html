@@ -1,107 +1,278 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2"><i class="bi bi-pc-display"></i> Computer Management</h1>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-3">
+    <div>
+        <h1 class="h3 mb-0 d-flex align-items-center text-white fw-bold">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 100 100" class="me-2">
+                <rect x="25" y="25" width="50" height="35" rx="4" fill="#0ea5e9"/>
+                <path d="M 40 60 L 60 60 L 65 75 L 35 75 Z" fill="#3b82f6"/>
+                <rect x="30" y="75" width="40" height="5" rx="2" fill="#8b5cf6"/>
+            </svg>
+            Computer Management
+        </h1>
+        <div class="text-muted small mt-1">Manage and monitor computers in your environment</div>
+    </div>
     {% if current_user.is_admin() %}
     <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="{{ url_for('add_computer') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Add Computer
+        <a href="{{ url_for('add_computer') }}" class="btn btn-primary d-flex align-items-center">
+            <i class="bi bi-plus-circle-fill me-2"></i> Add Computer
         </a>
     </div>
     {% endif %}
 </div>
 
-<!-- Search Bar -->
-<div class="row mb-3">
-    <div class="col-md-6">
-        <form method="GET" class="d-flex">
-            <input type="text" name="search" class="form-control" placeholder="Search computers..." 
-                   value="{{ search }}" onchange="this.form.submit()">
-            <button type="submit" class="btn btn-outline-secondary ms-2">
-                <i class="bi bi-search"></i>
-            </button>
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card h-100 border-0 stat-card">
+            <div class="card-body p-3 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="p-2 rounded bg-primary bg-opacity-10 text-primary"><i class="bi bi-pc-display"></i></div>
+                    <h3 class="mb-0 text-white">{{ stats.total }}</h3>
+                </div>
+                <div class="text-muted small mb-3">Total Computers</div>
+                <svg width="100%" height="20" class="mt-auto">
+                    <polyline points="0,15 20,10 40,18 60,8 80,12 100,5" fill="none" stroke="var(--bs-primary)" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card h-100 border-0 stat-card">
+            <div class="card-body p-3 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="p-2 rounded bg-success bg-opacity-10 text-success"><i class="bi bi-broadcast"></i></div>
+                    <h3 class="mb-0 text-white">{{ stats.online }}</h3>
+                </div>
+                <div class="text-muted small mb-3">Online Computers</div>
+                <svg width="100%" height="20" class="mt-auto">
+                    <polyline points="0,15 20,12 40,8 60,15 80,10 100,5" fill="none" stroke="var(--bs-success)" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card h-100 border-0 stat-card" style="border-left-color: #ef4444;">
+            <div class="card-body p-3 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="p-2 rounded bg-danger bg-opacity-10 text-danger"><i class="bi bi-wifi-off"></i></div>
+                    <h3 class="mb-0 text-white">{{ stats.offline }}</h3>
+                </div>
+                <div class="text-muted small mb-3">Offline / Restarting</div>
+                <svg width="100%" height="20" class="mt-auto">
+                    <polyline points="0,5 20,12 40,10 60,18 80,12 100,20" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card h-100 border-0 stat-card" style="border-left-color: #8b5cf6;">
+            <div class="card-body p-3 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="p-2 rounded bg-info bg-opacity-10" style="color:#8b5cf6;"><i class="bi bi-hdd-network-fill"></i></div>
+                    <h3 class="mb-0 text-white">{{ stats.servers }}</h3>
+                </div>
+                <div class="text-muted small mb-3">Domain Controllers / Servers</div>
+                <svg width="100%" height="20" class="mt-auto">
+                    <polyline points="0,15 20,5 40,10 60,15 80,5 100,5" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm mb-4 bg-transparent">
+    <div class="card-body p-0">
+        <form method="GET" action="{{ url_for('computers') }}" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-secondary text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control bg-transparent border-secondary text-light" placeholder="Search computers..." value="{{ search }}">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Operating System</label>
+                <select name="os_filter" class="form-select bg-transparent border-secondary text-light">
+                    <option value="" class="bg-dark">All OS</option>
+                    {% for os in all_os %}
+                        <option value="{{ os }}" class="bg-dark" {% if os_filter == os %}selected{% endif %}>{{ os }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Device Type</label>
+                <select name="device_type" class="form-select bg-transparent border-secondary text-light">
+                    <option value="" class="bg-dark">All Types</option>
+                    {% for type in all_device_types %}
+                        <option value="{{ type }}" class="bg-dark" {% if device_type == type %}selected{% endif %}>{{ type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Status</label>
+                <select name="status" class="form-select bg-transparent border-secondary text-light">
+                    <option value="" class="bg-dark">All Status</option>
+                    <option value="ON" class="bg-dark" {% if status == 'ON' %}selected{% endif %}>Online</option>
+                    <option value="OFF" class="bg-dark" {% if status == 'OFF' %}selected{% endif %}>Offline</option>
+                    <option value="RESTART" class="bg-dark" {% if status == 'RESTART' %}selected{% endif %}>Restarting</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Organizational Unit</label>
+                <select name="ou_id" class="form-select bg-transparent border-secondary text-light">
+                    <option value="" class="bg-dark">All OUs</option>
+                    {% for ou in all_ous %}
+                        <option value="{{ ou.id }}" class="bg-dark" {% if ou_id == ou.id|string or ou_id == ou.id %}selected{% endif %}>{{ ou.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex">
+                <button type="submit" class="btn btn-primary w-100 me-2 d-flex align-items-center justify-content-center">
+                    <i class="bi bi-funnel-fill me-1"></i> Filter
+                </button>
+                <a href="{{ url_for('computers') }}" class="btn btn-outline-secondary d-flex align-items-center justify-content-center" title="Reset Filters">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </a>
+            </div>
+            
+            <!-- Preserve sorting params in filters -->
+            <input type="hidden" name="sort_by" value="{{ sort_by }}">
+            <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
         </form>
     </div>
 </div>
 
 <!-- Computers Table -->
-<div class="card">
-    <div class="card-body d-flex flex-column paginated-container">
-        {% if computers %}
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>OS</th>
-                        <th>IP Address</th>
-                        <th>Status</th>
-                        <th>OU</th>
-                        <th>Last Seen</th>
-                        {% if current_user.is_admin() %}
-                        <th>Actions</th>
-                        {% endif %}
-                    </tr>
-                </thead>
-                <tbody>
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0 table-responsive" style="max-height: 600px;">
+        <table class="table table-hover table-sticky-header mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th class="border-bottom-0 py-3 ps-4 text-muted small fw-medium" style="width: 25%;">
+                        <a href="{{ url_for('computers', search=search, status=status, os_filter=os_filter, ou_id=ou_id, sort_by='name', sort_dir='desc' if sort_by == 'name' and sort_dir == 'asc' else 'asc') }}" class="text-decoration-none text-muted d-flex align-items-center">
+                            Computer <i class="bi bi-arrow-down-up ms-1" style="font-size:0.7rem;"></i>
+                        </a>
+                    </th>
+                    <th class="border-bottom-0 py-3 text-muted small fw-medium">
+                        <a href="{{ url_for('computers', search=search, status=status, os_filter=os_filter, device_type=device_type, ou_id=ou_id, sort_by='device_type', sort_dir='desc' if sort_by == 'device_type' and sort_dir == 'asc' else 'asc') }}" class="text-decoration-none text-muted d-flex align-items-center">
+                            Type <i class="bi bi-arrow-down-up ms-1" style="font-size:0.7rem;"></i>
+                        </a>
+                    </th>
+                    <th class="border-bottom-0 py-3 text-muted small fw-medium">
+                        <a href="{{ url_for('computers', search=search, status=status, os_filter=os_filter, device_type=device_type, ou_id=ou_id, sort_by='operating_system', sort_dir='desc' if sort_by == 'operating_system' and sort_dir == 'asc' else 'asc') }}" class="text-decoration-none text-muted d-flex align-items-center">
+                            Operating System <i class="bi bi-arrow-down-up ms-1" style="font-size:0.7rem;"></i>
+                        </a>
+                    </th>
+                    <th class="border-bottom-0 py-3 text-muted small fw-medium">
+                        <a href="{{ url_for('computers', search=search, status=status, os_filter=os_filter, device_type=device_type, ou_id=ou_id, sort_by='ip_address', sort_dir='desc' if sort_by == 'ip_address' and sort_dir == 'asc' else 'asc') }}" class="text-decoration-none text-muted d-flex align-items-center">
+                            IP Address <i class="bi bi-arrow-down-up ms-1" style="font-size:0.7rem;"></i>
+                        </a>
+                    </th>
+                    <th class="border-bottom-0 py-3 text-muted small fw-medium">
+                        <a href="{{ url_for('computers', search=search, status=status, os_filter=os_filter, ou_id=ou_id, sort_by='status', sort_dir='desc' if sort_by == 'status' and sort_dir == 'asc' else 'asc') }}" class="text-decoration-none text-muted d-flex align-items-center">
+                            Status <i class="bi bi-arrow-down-up ms-1" style="font-size:0.7rem;"></i>
+                        </a>
+                    </th>
+                    <th class="border-bottom-0 py-3 text-muted small fw-medium">
+                        <a href="{{ url_for('computers', search=search, status=status, os_filter=os_filter, ou_id=ou_id, sort_by='ou_id', sort_dir='desc' if sort_by == 'ou_id' and sort_dir == 'asc' else 'asc') }}" class="text-decoration-none text-muted d-flex align-items-center">
+                            OU <i class="bi bi-arrow-down-up ms-1" style="font-size:0.7rem;"></i>
+                        </a>
+                    </th>
+                    <th class="border-bottom-0 py-3 text-muted small fw-medium">
+                        <a href="{{ url_for('computers', search=search, status=status, os_filter=os_filter, ou_id=ou_id, sort_by='last_seen', sort_dir='desc' if sort_by == 'last_seen' and sort_dir == 'asc' else 'asc') }}" class="text-decoration-none text-muted d-flex align-items-center">
+                            Last Seen <i class="bi bi-arrow-down-up ms-1" style="font-size:0.7rem;"></i>
+                        </a>
+                    </th>
+                    {% if current_user.is_admin() %}
+                    <th class="border-bottom-0 py-3 text-end pe-4 text-muted small fw-medium">Actions</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% if computers %}
                     {% for computer in computers %}
-                    <tr>
-                        <td><strong>{{ computer.name }}</strong></td>
-                        <td>{{ computer.description or '-' }}</td>
-                        <td>{{ computer.operating_system or '-' }}</td>
-                        <td>{{ computer.ip_address or '-' }}</td>
-                        <td>
-                            <span id="comp-badge-{{ computer.id }}" class="badge 
-                                {% if computer.status == 'ON' %}bg-success
-                                {% elif computer.status == 'OFF' %}bg-danger
-                                {% else %}bg-warning{% endif %}">
-                                {{ computer.status }}
-                            </span>
+                    <tr class="clickable-row border-bottom border-secondary" onclick="if(!event.target.closest('a') && !event.target.closest('button')) window.location.href='{{ url_for('edit_computer', id=computer.id) }}'">
+                        <td class="ps-4 py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="user-avatar avatar-{{ computer.id % 5 }} me-3 flex-shrink-0">
+                                    {{ computer.name[0:2]|upper }}
+                                </div>
+                                <div>
+                                    <div class="text-white fw-semibold mb-0">{{ computer.name }}</div>
+                                    <div class="text-muted small text-truncate" style="max-width:200px;">{{ computer.description or 'No description' }}</div>
+                                </div>
+                            </div>
                         </td>
-                        <td>
-                            {% if computer.organizational_unit %}
-                                <small>{{ computer.organizational_unit.get_full_path() }}</small>
+                        <td class="py-3">
+                            <span class="badge badge-pill-outline {% if computer.device_type == 'Server' %}text-danger{% elif computer.device_type == 'Domain Controller' %}text-warning{% else %}text-info{% endif %}">{{ computer.device_type or '-' }}</span>
+                        </td>
+                        <td class="py-3">
+                            {% if computer.operating_system %}
+                                {% if 'server' in computer.operating_system|lower %}
+                                    <span class="text-light small"><i class="bi bi-hdd-network"></i> {{ computer.operating_system }}</span>
+                                {% else %}
+                                    <span class="text-light small"><i class="bi bi-windows"></i> {{ computer.operating_system }}</span>
+                                {% endif %}
                             {% else %}
-                                <small class="text-muted">None</small>
+                                <span class="text-muted small">-</span>
                             {% endif %}
                         </td>
-                        <td>
-                            {% if computer.last_seen %}
-                                <small>{{ computer.last_seen.strftime('%Y-%m-%d %H:%M') }}</small>
+                        <td class="py-3 text-light font-monospace small">
+                            {{ computer.ip_address or '-' }}
+                        </td>
+                        <td class="py-3">
+                            {% if computer.status == 'ON' %}
+                                <span id="comp-badge-{{ computer.id }}" class="badge bg-success bg-opacity-25 text-success border border-success d-inline-flex align-items-center"><span class="bg-success rounded-circle me-1" style="width:6px;height:6px;"></span> Online</span>
+                            {% elif computer.status == 'OFF' %}
+                                <span id="comp-badge-{{ computer.id }}" class="badge bg-danger bg-opacity-25 text-danger border border-danger d-inline-flex align-items-center"><span class="bg-danger rounded-circle me-1" style="width:6px;height:6px;"></span> Offline</span>
+                            {% elif computer.status == 'RESTART' %}
+                                <span id="comp-badge-{{ computer.id }}" class="badge bg-warning bg-opacity-25 text-warning border border-warning d-inline-flex align-items-center"><span class="bg-warning rounded-circle me-1" style="width:6px;height:6px;"></span> Restarting</span>
                             {% else %}
-                                <small class="text-muted">Never</small>
+                                <span id="comp-badge-{{ computer.id }}" class="badge bg-secondary">{{ computer.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3">
+                            {% if computer.organizational_unit %}
+                                <a href="{{ url_for('ou_bp.organizational_units', selected_ou=computer.organizational_unit.id) }}" class="badge bg-secondary bg-opacity-25 text-light text-decoration-none border border-secondary" onclick="event.stopPropagation();">
+                                    {{ computer.organizational_unit.name }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted small">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3">
+                            {% if computer.last_seen %}
+                                <div class="text-light small">{{ computer.last_seen.strftime('%d %b %Y') }}</div>
+                                <div class="text-muted" style="font-size:0.7rem;">{{ computer.last_seen.strftime('%H:%M') }}</div>
+                            {% else %}
+                                <span class="text-muted small">Never</span>
                             {% endif %}
                         </td>
                         {% if current_user.is_admin() %}
-                        <td>
+                        <td class="py-3 text-end pe-4 table-actions">
                             <div class="btn-group" role="group">
-                                <a href="{{ url_for('edit_computer', id=computer.id) }}" 
-                                   class="btn btn-sm btn-outline-primary" title="Edit">
-                                    <i class="bi bi-pencil"></i>
+                                <a href="{{ url_for('edit_computer', id=computer.id) }}" class="btn btn-sm text-primary" title="View/Edit Details" onclick="event.stopPropagation();">
+                                    <i class="bi bi-eye"></i>
                                 </a>
                                 
-                                <!-- Status Change Buttons -->
-                                <button type="button" class="btn btn-sm btn-outline-success" title="Turn ON" 
-                                        onclick="computerAction({{ computer.id }}, 'ON')"
-                                        {% if computer.status == 'ON' %}disabled{% endif %}>
-                                    <i class="bi bi-power"></i>
-                                </button>
+                                {% if computer.status == 'OFF' %}
+                                    <button type="button" class="btn btn-sm text-success" title="Power ON" onclick="event.stopPropagation(); computerAction({{ computer.id }}, 'ON')">
+                                        <i class="bi bi-play-circle-fill"></i>
+                                    </button>
+                                {% else %}
+                                    <button type="button" class="btn btn-sm text-danger" title="Power OFF" onclick="event.stopPropagation(); computerAction({{ computer.id }}, 'OFF')">
+                                        <i class="bi bi-stop-circle-fill"></i>
+                                    </button>
+                                {% endif %}
                                 
-                                <button type="button" class="btn btn-sm btn-outline-secondary" title="Turn OFF" 
-                                        onclick="computerAction({{ computer.id }}, 'OFF')"
-                                        {% if computer.status == 'OFF' %}disabled{% endif %}>
-                                    <i class="bi bi-stop-circle"></i>
-                                </button>
-                                
-                                <button type="button" class="btn btn-sm btn-outline-warning" title="Restart"
-                                        onclick="computerRestart({{ computer.id }})">
+                                <button type="button" class="btn btn-sm text-warning" title="Restart" onclick="event.stopPropagation(); computerRestart({{ computer.id }})" {% if computer.status == 'OFF' %}disabled{% endif %}>
                                     <i class="bi bi-arrow-clockwise"></i>
                                 </button>
                                 
-                                <button type="button" class="btn btn-sm btn-outline-danger" 
-                                        onclick="confirmDelete('{{ computer.name }}', '{{ url_for('delete_computer', id=computer.id) }}')" 
+                                <button type="button" class="btn btn-sm text-danger" 
+                                        onclick="event.stopPropagation(); confirmDelete('{{ computer.name }}', '{{ url_for('delete_computer', id=computer.id) }}')" 
                                         title="Delete">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -110,60 +281,56 @@
                         {% endif %}
                     </tr>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Pagination -->
-        {% if pagination %}
-        <nav aria-label="Computer pagination" class="mt-auto pt-3">
-            <ul class="pagination justify-content-center mb-0">
-                {% if pagination.has_prev %}
-                    <li class="page-item">
-                        <a class="page-link" href="{{ url_for('computers', page=pagination.prev_num, search=search) }}">Previous</a>
-                    </li>
                 {% else %}
-                    <li class="page-item disabled">
-                        <span class="page-link">Previous</span>
-                    </li>
+                    <tr>
+                        <td colspan="{% if current_user.is_admin() %}8{% else %}7{% endif %}" class="text-center py-5">
+                            <div class="text-muted d-flex flex-column align-items-center">
+                                <i class="bi bi-pc-display fs-1 mb-3 opacity-50"></i>
+                                <h5>No computers found</h5>
+                                <p class="small mb-0">Try adjusting your filters or search query.</p>
+                                {% if search or status or os_filter or ou_id %}
+                                    <a href="{{ url_for('computers') }}" class="btn btn-sm btn-outline-secondary mt-3">Clear Filters</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
                 {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Footer Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="card-footer bg-transparent border-0 py-3 px-4 d-flex justify-content-between align-items-center flex-wrap">
+        <div class="text-muted small mb-2 mb-md-0">
+            Showing {{ (pagination.page - 1) * pagination.per_page + 1 }} to {% if pagination.page == pagination.pages %}{{ pagination.total }}{% else %}{{ pagination.page * pagination.per_page }}{% endif %} of {{ pagination.total }} computers
+        </div>
+        
+        <nav aria-label="Pagination">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                    <a class="page-link bg-transparent border-secondary text-light" href="{% if pagination.has_prev %}{{ url_for('computers', page=pagination.prev_num, search=search, status=status, os_filter=os_filter, device_type=device_type, ou_id=ou_id, sort_by=sort_by, sort_dir=sort_dir) }}{% else %}#{% endif %}"><i class="bi bi-chevron-left"></i></a>
+                </li>
                 
-                {% for page_num in pagination.iter_pages() %}
+                {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=2, right_edge=1) %}
                     {% if page_num %}
-                        {% if page_num != pagination.page %}
-                            <li class="page-item">
-                                <a class="page-link" href="{{ url_for('computers', page=page_num, search=search) }}">{{ page_num }}</a>
-                            </li>
-                        {% else %}
-                            <li class="page-item active">
-                                <span class="page-link">{{ page_num }}</span>
-                            </li>
-                        {% endif %}
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">...</span>
+                        <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                            <a class="page-link {% if page_num == pagination.page %}bg-primary border-primary{% else %}bg-transparent border-secondary text-light{% endif %}" href="{{ url_for('computers', page=page_num, search=search, status=status, os_filter=os_filter, device_type=device_type, ou_id=ou_id, sort_by=sort_by, sort_dir=sort_dir) }}">{{ page_num }}</a>
                         </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link bg-transparent border-secondary text-muted">...</span></li>
                     {% endif %}
                 {% endfor %}
                 
-                {% if pagination.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="{{ url_for('computers', page=pagination.next_num, search=search) }}">Next</a>
-                    </li>
-                {% else %}
-                    <li class="page-item disabled">
-                        <span class="page-link">Next</span>
-                    </li>
-                {% endif %}
+                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                    <a class="page-link bg-transparent border-secondary text-light" href="{% if pagination.has_next %}{{ url_for('computers', page=pagination.next_num, search=search, status=status, os_filter=os_filter, device_type=device_type, ou_id=ou_id, sort_by=sort_by, sort_dir=sort_dir) }}{% else %}#{% endif %}"><i class="bi bi-chevron-right"></i></a>
+                </li>
             </ul>
         </nav>
-        {% endif %}
-        
-        {% else %}
-        <p class="text-muted text-center">No computers found.</p>
-        {% endif %}
     </div>
+    {% endif %}
 </div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -204,8 +371,8 @@ function computerRestart(id) {
         if (data.success) {
             const badge = document.getElementById(`comp-badge-${id}`);
             if (badge) {
-                badge.className = 'badge bg-danger';
-                badge.textContent = 'OFF';
+                badge.className = 'badge bg-danger bg-opacity-25 text-danger border border-danger d-inline-flex align-items-center';
+                badge.innerHTML = '<span class="bg-danger rounded-circle me-1" style="width:6px;height:6px;"></span> Offline';
             }
             
             // 2. Wait 2 seconds, then set to ON
@@ -225,5 +392,12 @@ function computerRestart(id) {
         }
     });
 }
+
+document.addEventListener("DOMContentLoaded", function(){
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+});
 </script>
 {% endblock %}
