@@ -310,8 +310,16 @@ def users():
     """User management page."""
     page = request.args.get('page', 1, type=int)
     search = request.args.get('search', '', type=str)
+    role = request.args.get('role', '', type=str)
+    status = request.args.get('status', '', type=str)
+    group_id = request.args.get('group', '', type=int)
+    
+    sort_by = request.args.get('sort_by', 'username', type=str)
+    sort_dir = request.args.get('sort_dir', 'asc', type=str)
     
     query = User.query
+    
+    # Apply filters
     if search:
         query = query.filter(
             (User.username.contains(search)) |
@@ -319,13 +327,44 @@ def users():
             (User.first_name.contains(search)) |
             (User.last_name.contains(search))
         )
+    if role:
+        query = query.filter(User.role == role)
+    if status == 'Active':
+        query = query.filter(User.is_active == True).filter(User.locked_until.is_(None) | (User.locked_until <= datetime.utcnow()))
+    elif status == 'Inactive':
+        query = query.filter(User.is_active == False)
+    elif status == 'Locked':
+        query = query.filter(User.locked_until > datetime.utcnow())
+    if group_id:
+        query = query.filter(User.groups.any(id=group_id))
+        
+    # Apply sorting
+    sort_column = getattr(User, sort_by, User.username)
+    if sort_dir == 'desc':
+        query = query.order_by(sort_column.desc())
+    else:
+        query = query.order_by(sort_column.asc())
     
-    users_pagination = query.order_by(User.username).paginate(
+    users_pagination = query.paginate(
         page=page, per_page=app.config['ITEMS_PER_PAGE'], error_out=False
     )
     
+    # Calculate real stats
+    stats = {
+        'total': User.query.count(),
+        'active': User.query.filter_by(is_active=True).filter(User.locked_until.is_(None) | (User.locked_until <= datetime.utcnow())).count(),
+        'inactive': User.query.filter_by(is_active=False).count(),
+        'locked': User.query.filter(User.locked_until > datetime.utcnow()).count(),
+        'admin': User.query.filter_by(role='Admin').count()
+    }
+    
+    all_groups = Group.query.order_by(Group.name).all()
+    
     return render_template('users.html', title='User Management', 
-                         users=users_pagination.items, pagination=users_pagination, search=search)
+                         users=users_pagination.items, pagination=users_pagination, 
+                         search=search, role=role, status=status, group_id=group_id,
+                         sort_by=sort_by, sort_dir=sort_dir, stats=stats, all_groups=all_groups,
+                         datetime=datetime)
 
 @app.route('/users/add', methods=['GET', 'POST'])
 @admin_required
@@ -471,6 +510,59 @@ def reset_password(id):
         return redirect(url_for('users'))
     
     return render_template('password_reset.html', title='Reset Password', form=form, user=user)
+
+@app.route('/users/toggle-status/<int:id>', methods=['POST'])
+@admin_required
+def toggle_user_status(id):
+    """Toggle user active status."""
+    user = User.query.get_or_404(id)
+    if user.id == current_user.id:
+        flash("You cannot disable your own account.", 'danger')
+        return redirect(url_for('users'))
+        
+    user.is_active = not user.is_active
+    db.session.commit()
+    
+    AuditLog.log_action(
+        user_id=current_user.id,
+        action='User Disabled' if not user.is_active else 'User Enabled',
+        target=f'User: {user.username}',
+        ip_address=get_client_ip()
+    )
+    
+    flash(f"User {user.username} status updated.", 'success')
+    return redirect(url_for('users'))
+
+@app.route('/users/lock/<int:id>', methods=['POST'])
+@admin_required
+def toggle_user_lock(id):
+    """Lock or unlock a user account."""
+    from datetime import timedelta
+    
+    user = User.query.get_or_404(id)
+    if user.id == current_user.id:
+        flash("You cannot lock your own account.", 'danger')
+        return redirect(url_for('users'))
+        
+    if user.is_locked():
+        user.locked_until = None
+        user.failed_attempts = 0
+        action = 'User Unlocked'
+    else:
+        user.locked_until = datetime.utcnow() + timedelta(days=36500)
+        action = 'User Locked (Manual)'
+        
+    db.session.commit()
+    
+    AuditLog.log_action(
+        user_id=current_user.id,
+        action=action,
+        target=f'User: {user.username}',
+        ip_address=get_client_ip()
+    )
+    
+    flash(f"User {user.username} lock status updated.", 'success')
+    return redirect(url_for('users'))
 
 @app.route('/groups')
 @login_required_with_message

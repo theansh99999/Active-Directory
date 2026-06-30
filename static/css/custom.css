@@ -303,8 +303,86 @@ main {
     border-left-color: #fd7e14;
 }
 
-.audit-log-entry.danger {
-    border-left-color: #dc3545;
+}
+
+/* User Management Redesign */
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.85rem;
+    color: #fff;
+}
+.avatar-0 { background-color: #0ea5e9; }
+.avatar-1 { background-color: #8b5cf6; }
+.avatar-2 { background-color: #f59e0b; }
+.avatar-3 { background-color: #10b981; }
+.avatar-4 { background-color: #ec4899; }
+
+.badge-pill-outline {
+    border-radius: 50rem;
+    padding: 0.25em 0.6em;
+    border: 1px solid currentColor;
+    background-color: transparent;
+}
+.badge-pill {
+    border-radius: 50rem;
+    padding: 0.35em 0.8em;
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+.status-dot.active {
+    background-color: #10b981;
+    box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+}
+.status-dot.inactive {
+    background-color: #64748b;
+}
+.status-dot.locked {
+    background-color: #ef4444;
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+}
+
+.table-sticky-header th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #1e293b;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.clickable-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.clickable-row:hover {
+    background-color: rgba(255,255,255,0.05) !important;
+}
+
+.table-actions .btn {
+    border-color: rgba(255,255,255,0.1);
+    background-color: rgba(0,0,0,0.1);
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.table-actions .btn:hover {
+    background-color: rgba(255,255,255,0.05);
 }
 
 .audit-log-entry.info {
